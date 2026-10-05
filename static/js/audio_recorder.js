@@ -35,7 +35,43 @@ class FluencyAudioEngine {
     this.onTimerTick = null;
     this.onAudioReady = null;
 
+    this.currentLanguage = null;
     this.initSpeechRecognition();
+  }
+
+  getRecognitionLanguage() {
+    let lang = this.currentLanguage;
+    if (!lang && window.FluencyI18n && typeof window.FluencyI18n.getLanguage === 'function') {
+      lang = window.FluencyI18n.getLanguage();
+    }
+    if (!lang && window.AppState && window.AppState.user && window.AppState.user.preferred_language) {
+      lang = window.AppState.user.preferred_language;
+    }
+    if (!lang) {
+      try {
+        lang = localStorage.getItem('fluency_app_lang') || localStorage.getItem('fluency_language');
+      } catch (e) {}
+    }
+
+    const map = {
+      'Hindi': 'hi-IN',
+      'Marathi': 'mr-IN',
+      'Spanish': 'es-ES',
+      'French': 'fr-FR',
+      'German': 'de-DE',
+      'Japanese': 'ja-JP',
+      'Chinese': 'zh-CN',
+      'English': 'en-US'
+    };
+
+    return map[lang] || 'en-US';
+  }
+
+  setLanguage(langName) {
+    this.currentLanguage = langName;
+    if (this.recognition) {
+      this.recognition.lang = this.getRecognitionLanguage();
+    }
   }
 
   initSpeechRecognition() {
@@ -44,7 +80,7 @@ class FluencyAudioEngine {
       this.recognition = new SpeechRecognition();
       this.recognition.continuous = true;
       this.recognition.interimResults = true;
-      this.recognition.lang = 'en-US';
+      this.recognition.lang = this.getRecognitionLanguage();
 
       this.recognition.onresult = (event) => {
         let interim = '';
@@ -75,6 +111,7 @@ class FluencyAudioEngine {
       this.recognition.onend = () => {
         if (this.isRecognizing) {
           try {
+            this.recognition.lang = this.getRecognitionLanguage();
             this.recognition.start();
           } catch (e) {}
         }
@@ -155,6 +192,7 @@ class FluencyAudioEngine {
     // Start Speech Recognition (non-blocking)
     if (this.recognition) {
       try {
+        this.recognition.lang = this.getRecognitionLanguage();
         this.isRecognizing = true;
         this.recognition.start();
       } catch (e) {

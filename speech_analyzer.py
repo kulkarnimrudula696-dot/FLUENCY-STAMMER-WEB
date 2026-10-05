@@ -24,6 +24,7 @@ import os
 import json
 import logging
 import difflib
+import unicodedata
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,10 @@ COMMON_FILLERS = [
     "um", "uh", "er", "ah", "like", "you know", "actually", "basically",
     "literally", "i mean", "sort of", "kind of", "right", "so yeah", "honestly"
 ]
+
+PUNCT_CHARS_STR = '.,!?:;\"“”«»‹›()[]{}।॥…–—/\\|`~*#@$%^&+=¿¡。、・「」『』〜！？：；'
+PUNCT_PATTERN = r'[^\s' + re.escape(PUNCT_CHARS_STR) + r']+'
+PUNCT_STRIP_CHARS = PUNCT_CHARS_STR + '\'\"-_'
 
 def format_duration(seconds):
     """Format duration into readable string: '18s' or '1m 14s'"""
@@ -43,24 +48,34 @@ def format_duration(seconds):
 
 
 def clean_tokens(text):
-    """Extract lowercase words supporting Unicode letters, hyphens, and apostrophes."""
+    """
+    Extract lowercase words supporting all Unicode scripts (Latin, Devanagari, CJK, etc.),
+    preserving complex script vowel marks (matras), viramas, conjuncts, hyphens, and apostrophes.
+    """
     if not text:
         return []
-    return [w.lower() for w in re.findall(r"[\w'-]+", text, re.UNICODE) if w.strip()]
+    text = unicodedata.normalize('NFC', text)
+    tokens = []
+    for match in re.finditer(PUNCT_PATTERN, text, re.UNICODE):
+        tok = match.group(0).strip(PUNCT_STRIP_CHARS)
+        if tok:
+            tokens.append(tok.lower())
+    return tokens
 
 
 def compare_reading_paragraph(expected_text, spoken_text):
     """
     Strict Sequence-Aligned Paragraph Comparison for Reading Mode.
-    Compares the ACTUAL speech transcript with the EXACT displayed paragraph.
+    Compares the ACTUAL speech transcript with the EXACT displayed paragraph in the same language.
     
     Identifies:
-    - Matched words in correct sequence
+    - Matched / correct words in sequence
     - Missing words (skipped from paragraph)
     - Extra words (unrelated/extraneous words added by user)
     - Replaced/Mismatched words (substitutions)
     - Repeated words / phrases (stutters or repetitions)
-    - Paragraph Match % (penalizing missing words, extra speech, and substitutions)
+    - Wrong word order (words spoken out of sequence)
+    - Paragraph Match % (penalizing missing words, extra speech, substitutions, and wrong order)
     """
     expected_words = clean_tokens(expected_text)
     spoken_words = clean_tokens(spoken_text)
@@ -70,10 +85,12 @@ def compare_reading_paragraph(expected_text, spoken_text):
             "match_pct": 100.0,
             "matched_count": len(spoken_words),
             "total_expected": len(spoken_words),
+            "correct": spoken_words,
             "missing": [],
             "extra": [],
             "replaced": [],
             "repeated": [],
+            "wrong_order": [],
             "is_reading_mode": False,
             "summary": "Free speech practice (No fixed paragraph comparison)."
         }
@@ -83,10 +100,12 @@ def compare_reading_paragraph(expected_text, spoken_text):
             "match_pct": 0.0,
             "matched_count": 0,
             "total_expected": len(expected_words),
+            "correct": [],
             "missing": expected_words,
             "extra": [],
             "replaced": [],
             "repeated": [],
+            "wrong_order": [],
             "is_reading_mode": True,
             "summary": "No speech detected. All paragraph words were missed."
         }
@@ -133,21 +152,41 @@ def compare_reading_paragraph(expected_text, spoken_text):
         if p1 == p2 and p1 not in repeated_items:
             repeated_items.append(p1)
 
+    # Detect wrong word order:
+    # A word was spoken out of sequence if it exists in the expected text, but was spoken
+    # at a sequence location that violates the expected word progression.
+    wrong_order = []
+    exp_word_indices = {}
+    for idx, w in enumerate(expected_words):
+        if w not in exp_word_indices:
+            exp_word_indices[w] = []
+        exp_word_indices[w].append(idx)
+
+    last_pos = -1
+    for w in spoken_words:
+        if w in exp_word_indices:
+            candidates = exp_word_indices[w]
+            valid = [pos for pos in candidates if pos >= last_pos]
+            if valid:
+                last_pos = valid[0]
+            else:
+                if w not in wrong_order:
+                    wrong_order.append(w)
+
     n_exp = len(expected_words)
     n_match = len(matched_words)
     raw_accuracy = (n_match / max(n_exp, 1)) * 100.0
 
-    # Penalties for extraneous speech and substitutions
-    # Unrelated/extra speech penalty:
+    # Penalties for extraneous speech, substitutions, and wrong word order
     extra_penalty = (len(extra_words) / max(n_exp, 1)) * 50.0
-    # Replaced words penalty:
     replace_penalty = (len(replaced_words) / max(n_exp, 1)) * 35.0
+    order_penalty = (len(wrong_order) / max(n_exp, 1)) * 20.0
 
-    match_pct = max(0.0, min(100.0, round(raw_accuracy - extra_penalty - replace_penalty, 1)))
+    match_pct = max(0.0, min(100.0, round(raw_accuracy - extra_penalty - replace_penalty - order_penalty, 1)))
 
     # Summary
-    if n_match == n_exp and len(extra_words) == 0 and len(replaced_words) == 0:
-        summary = "100% Exact Match: You read the entire paragraph accurately."
+    if n_match == n_exp and len(extra_words) == 0 and len(replaced_words) == 0 and len(wrong_order) == 0:
+        summary = "100% Exact Match: You read the entire paragraph accurately in correct order."
     else:
         parts = [f"{n_match}/{n_exp} words matched"]
         if missing_words:
@@ -158,16 +197,20 @@ def compare_reading_paragraph(expected_text, spoken_text):
             parts.append(f"{len(replaced_words)} replaced")
         if repeated_items:
             parts.append(f"{len(repeated_items)} repeated")
+        if wrong_order:
+            parts.append(f"{len(wrong_order)} wrong order")
         summary = " · ".join(parts)
 
     return {
         "match_pct": match_pct,
         "matched_count": n_match,
         "total_expected": n_exp,
+        "correct": matched_words,
         "missing": missing_words,
         "extra": extra_words,
         "replaced": replaced_words,
         "repeated": repeated_items,
+        "wrong_order": wrong_order,
         "is_reading_mode": True,
         "summary": summary
     }
@@ -206,13 +249,13 @@ def detect_repetitions_and_restarts(transcript, prompt_text=""):
     """
     lower_text = transcript.lower()
     lower_prompt = (prompt_text or "").lower()
-    words = re.findall(r"\b[\w'-]+\b", lower_text)
+    words = clean_tokens(lower_text)
     
     repeated_words_list = []
     syllable_stutters = []
     restarted_phrases = []
 
-    # 1. Immediate word repetitions (e.g. "I I", "the the", "we we")
+    # 1. Immediate word repetitions (e.g. "I I", "the the", "we we", "हम हम")
     for i in range(len(words) - 1):
         if words[i] == words[i+1] and len(words[i]) > 0:
             rep_str = f"{words[i]} {words[i]}"
@@ -220,7 +263,7 @@ def detect_repetitions_and_restarts(transcript, prompt_text=""):
                 repeated_words_list.append(rep_str)
 
     # 2. Syllable/sound stutters (e.g. "b-b-because", "wh-when", "s-s-so", "p-practice")
-    stutter_matches = re.findall(r'\b([a-zA-Z]{1,3})[-]+([a-zA-Z]+)\b', lower_text)
+    stutter_matches = re.findall(r'\b([a-zA-Z\u0900-\u097F]{1,3})[-]+([a-zA-Z\u0900-\u097F]+)\b', lower_text)
     for prefix, full_word in stutter_matches:
         if full_word.startswith(prefix.lower()):
             syllable_stutters.append(f"{prefix}-{full_word}")
@@ -265,17 +308,17 @@ def extract_difficult_words(transcript, prompt_text, repetitions_list):
     Identify actual words where user appeared to struggle.
     NEVER invent difficult words. Only mention words from the user's transcript/prompt.
     """
-    words = re.findall(r"\b[\w'-]+\b", transcript.lower())
+    words = clean_tokens(transcript)
     struggled_words = set()
 
     for rep in repetitions_list:
-        rep_tokens = re.findall(r"\b[a-zA-Z]+\b", rep)
+        rep_tokens = clean_tokens(rep)
         for tok in rep_tokens:
             if len(tok) >= 4 and tok not in COMMON_FILLERS:
                 struggled_words.add(tok)
 
     if prompt_text:
-        prompt_words = re.findall(r"\b[\w'-]+\b", prompt_text.lower())
+        prompt_words = clean_tokens(prompt_text)
         for pw in prompt_words:
             if len(pw) >= 8 and pw not in words and pw not in struggled_words:
                 struggled_words.add(pw)
@@ -311,10 +354,12 @@ def analyze_speech_data(transcript, audio_duration_seconds=0, prompt_text="", us
             "match_percentage": 0.0,
             "matched_words_count": 0,
             "total_expected_words": len(clean_tokens(prompt_text)) if prompt_text else 0,
+            "correct_words": [],
             "missing_words": clean_tokens(prompt_text) if prompt_text else [],
             "extra_words": [],
             "replaced_words": [],
             "repeated_words": [],
+            "wrong_order_words": [],
             "is_reading_mode": has_expected_prompt,
             "is_twister_mode": is_twister_mode,
             "mode_label": "Tongue Twister" if is_twister_mode else "Reading Mode",
@@ -345,6 +390,7 @@ def analyze_speech_data(transcript, audio_duration_seconds=0, prompt_text="", us
                 "extra_words_count": 0,
                 "replaced_words_count": 0,
                 "repeated_words_count": 0,
+                "wrong_order_words_count": 0,
                 "wpm": 0.0,
                 "word_count": 0,
                 "duration_seconds": round(audio_duration_seconds, 1),
@@ -473,6 +519,8 @@ def analyze_speech_data(transcript, audio_duration_seconds=0, prompt_text="", us
             focus_areas.append("tracking every word to avoid skipping phrases")
         if len(paragraph_match_result["replaced"]) > 0:
             focus_areas.append("accurate word pronunciation matching the text")
+        if len(paragraph_match_result.get("wrong_order", [])) > 0:
+            focus_areas.append("maintaining exact printed word order")
     if repetition_count > 0:
         focus_areas.append("smoother sentence starts without phrase restarts")
     if filler_count > 0:
@@ -493,6 +541,7 @@ def analyze_speech_data(transcript, audio_duration_seconds=0, prompt_text="", us
         p_extra = paragraph_match_result["extra"]
         p_missing = paragraph_match_result["missing"]
         p_replaced = paragraph_match_result["replaced"]
+        p_wrong_order = paragraph_match_result.get("wrong_order", [])
         p_match = paragraph_match_result["match_pct"]
         item_lbl = "tongue twister" if is_twister_mode else "paragraph"
 
@@ -506,6 +555,9 @@ def analyze_speech_data(transcript, audio_duration_seconds=0, prompt_text="", us
         elif len(p_missing) >= 3:
             sample_miss = ", ".join([f"'{w}'" for w in p_missing[:3]])
             pattern_noticed = f"You skipped words from the {item_lbl} ({sample_miss})."
+        elif len(p_wrong_order) > 0:
+            sample_wo = ", ".join([f"'{w}'" for w in p_wrong_order[:3]])
+            pattern_noticed = f"Word sequence variation detected: words ({sample_wo}) were spoken out of order."
         elif len(p_replaced) > 0:
             rep_ex = p_replaced[0]
             pattern_noticed = f"Phoneme slip detected: you said '{rep_ex['spoken']}' instead of '{rep_ex['expected']}'."
@@ -546,6 +598,7 @@ def analyze_speech_data(transcript, audio_duration_seconds=0, prompt_text="", us
         p_extra = paragraph_match_result["extra"]
         p_replaced = paragraph_match_result["replaced"]
         p_repeated = paragraph_match_result["repeated"]
+        p_wrong_order = paragraph_match_result.get("wrong_order", [])
         item_lbl = "Tongue Twister" if is_twister_mode else "Reading"
 
         if p_match >= 90.0:
@@ -585,6 +638,17 @@ def analyze_speech_data(transcript, audio_duration_seconds=0, prompt_text="", us
                 "issue": f"Mismatched Words ({len(p_replaced)}x: {rep_disp})",
                 "why_it_matters": "Substituting sounds happens when similar phonemes collide in rapid speech planning.",
                 "how_to_fix": "Slow down your initial tempo by 30% and glide through each syllable touch point gently."
+            })
+
+        if p_wrong_order:
+            wo_disp = ", ".join([f"'{w}'" for w in p_wrong_order[:4]])
+            if len(p_wrong_order) > 4:
+                wo_disp += f" (+{len(p_wrong_order)-4} more)"
+            what_needs_improvement.append(f"Wrong Word Order ({len(p_wrong_order)} word(s) spoken out of sequence: {wo_disp}). Follow the printed word order steadily.")
+            needs_improvement_cards.append({
+                "issue": f"Wrong Word Order ({len(p_wrong_order)} Out of Sequence)",
+                "why_it_matters": "Speaking words out of sequence happens when vocal pacing outpaces visual reading tracking.",
+                "how_to_fix": "Guide your gaze along each phrase in sequence from start to finish."
             })
 
     # General fluency what went well
@@ -677,10 +741,12 @@ def analyze_speech_data(transcript, audio_duration_seconds=0, prompt_text="", us
         "match_percentage": paragraph_match_result["match_pct"] if paragraph_match_result else 100.0,
         "matched_words_count": paragraph_match_result["matched_count"] if paragraph_match_result else word_count,
         "total_expected_words": paragraph_match_result["total_expected"] if paragraph_match_result else word_count,
+        "correct_words": paragraph_match_result.get("correct", []) if paragraph_match_result else [],
         "missing_words": paragraph_match_result["missing"] if paragraph_match_result else [],
         "extra_words": paragraph_match_result["extra"] if paragraph_match_result else [],
         "replaced_words": paragraph_match_result["replaced"] if paragraph_match_result else [],
         "repeated_words": paragraph_match_result["repeated"] if paragraph_match_result else [],
+        "wrong_order_words": paragraph_match_result.get("wrong_order", []) if paragraph_match_result else [],
         "is_reading_mode": bool(paragraph_match_result and paragraph_match_result.get("is_reading_mode")),
         "is_twister_mode": is_twister_mode,
         "mode_label": "Tongue Twister" if is_twister_mode else "Reading Mode",
@@ -712,6 +778,7 @@ def analyze_speech_data(transcript, audio_duration_seconds=0, prompt_text="", us
             "extra_words_count": len(paragraph_match_payload["extra_words"]),
             "replaced_words_count": len(paragraph_match_payload["replaced_words"]),
             "repeated_words_count": len(paragraph_match_payload["repeated_words"]),
+            "wrong_order_words_count": len(paragraph_match_payload["wrong_order_words"]),
             "wpm": wpm,
             "word_count": word_count,
             "duration_seconds": round(audio_duration_seconds, 1),

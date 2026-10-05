@@ -21981,12 +21981,29 @@ def get_age_group_label(age_group):
 
 
 
-def get_reading_for_age_and_diff(age_group="18-23", difficulty="all", length_type="all"):
+def get_reading_for_age_and_diff(age_group="18-23", difficulty="all", length_type="all", language="English"):
     """
-    Retrieve curated reading passages for given age group across the 5 core groups (6-11, 12-17, 18-23, 24-30, 31-40),
+    Retrieve curated reading passages for given language, age group across the 5 core groups (6-11, 12-17, 18-23, 24-30, 31-40),
     difficulty (easy, medium, hard), and length (short, medium, long).
-    Ensures that Easy, Medium, and Hard difficulty are strictly RELATIVE to the specific age group.
+    Ensures that Easy, Medium, and Hard difficulty are strictly RELATIVE to the specific age group and language.
     """
+    norm_lang = (language or "English").strip().lower()
+    
+    # If not English, fetch from localized multi-language library
+    if norm_lang not in ["english", "en"]:
+        try:
+            import reading_content_i18n
+            localized_items = reading_content_i18n.get_localized_reading_passages(
+                language=norm_lang,
+                age_group=age_group,
+                difficulty=difficulty,
+                length_type=length_type
+            )
+            if localized_items:
+                return localized_items
+        except Exception as e:
+            pass
+
     normalized_group = get_age_group_id(age_group)
     
     diff = (difficulty or "all").lower().strip()

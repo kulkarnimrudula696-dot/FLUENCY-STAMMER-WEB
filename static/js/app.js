@@ -38,10 +38,22 @@ const AppState = {
       if (data.authenticated && data.user) {
         this.user = data.user;
         this.hideAuthModal();
+        if (this.user.preferred_language) {
+          localStorage.setItem('fluency_language', this.user.preferred_language);
+        }
+        if (this.user.selected_avatar) {
+          localStorage.setItem('fluency_selected_avatar', this.user.selected_avatar);
+        }
+        if (this.user.name) {
+          localStorage.setItem('fluency_user_name', this.user.name);
+        }
         if (window.FluencyI18n && this.user.preferred_language) {
           FluencyI18n.setLanguage(this.user.preferred_language, false);
         }
         this.updateUserUI();
+        if (window.ProfileSettings) {
+          ProfileSettings.populateProfileForm(this.user);
+        }
         if (this.user.is_admin || this.user.role === 'admin') {
           this.navigateTo('admin-dashboard');
         } else {
@@ -69,8 +81,7 @@ const AppState = {
 
     // Language Sync
     if (window.FluencyI18n && this.user.preferred_language) {
-      FluencyI18n.currentLang = this.user.preferred_language;
-      FluencyI18n.applyToDOM();
+      FluencyI18n.setLanguage(this.user.preferred_language, false);
     }
 
     if (isAdmin) {
@@ -232,7 +243,22 @@ const AppState = {
         if (data.user) {
           this.user = data.user;
           this.hideAuthModal();
+          if (this.user.preferred_language) {
+            localStorage.setItem('fluency_language', this.user.preferred_language);
+          }
+          if (this.user.selected_avatar) {
+            localStorage.setItem('fluency_selected_avatar', this.user.selected_avatar);
+          }
+          if (this.user.name) {
+            localStorage.setItem('fluency_user_name', this.user.name);
+          }
+          if (window.FluencyI18n && this.user.preferred_language) {
+            FluencyI18n.setLanguage(this.user.preferred_language, false);
+          }
           this.updateUserUI();
+          if (window.ProfileSettings) {
+            ProfileSettings.populateProfileForm(this.user);
+          }
           if (data.is_admin || data.role === 'admin' || this.user.is_admin) {
             this.navigateTo('admin-dashboard');
             showToast("Welcome to Administrator Control Center!", "success");
@@ -269,7 +295,22 @@ const AppState = {
         if (data.user) {
           this.user = data.user;
           this.hideAuthModal();
+          if (this.user.preferred_language) {
+            localStorage.setItem('fluency_language', this.user.preferred_language);
+          }
+          if (this.user.selected_avatar) {
+            localStorage.setItem('fluency_selected_avatar', this.user.selected_avatar);
+          }
+          if (this.user.name) {
+            localStorage.setItem('fluency_user_name', this.user.name);
+          }
+          if (window.FluencyI18n && this.user.preferred_language) {
+            FluencyI18n.setLanguage(this.user.preferred_language, false);
+          }
           this.updateUserUI();
+          if (window.ProfileSettings) {
+            ProfileSettings.populateProfileForm(this.user);
+          }
           this.navigateTo('dashboard');
           showToast("Account created! Let's practice your voice.", "success");
         } else {
@@ -292,7 +333,22 @@ const AppState = {
         if (data.user) {
           this.user = data.user;
           this.hideAuthModal();
+          if (this.user.preferred_language) {
+            localStorage.setItem('fluency_language', this.user.preferred_language);
+          }
+          if (this.user.selected_avatar) {
+            localStorage.setItem('fluency_selected_avatar', this.user.selected_avatar);
+          }
+          if (this.user.name) {
+            localStorage.setItem('fluency_user_name', this.user.name);
+          }
+          if (window.FluencyI18n && this.user.preferred_language) {
+            FluencyI18n.setLanguage(this.user.preferred_language, false);
+          }
           this.updateUserUI();
+          if (window.ProfileSettings) {
+            ProfileSettings.populateProfileForm(this.user);
+          }
           this.navigateTo('dashboard');
           showToast("Logged in as Demo Practice Buddy.", "success");
         }
@@ -307,6 +363,15 @@ const AppState = {
         e.preventDefault();
         await fetch('/api/auth/logout', { method: 'POST' });
         this.user = null;
+        localStorage.removeItem('fluency_language');
+        localStorage.removeItem('fluency_selected_avatar');
+        localStorage.removeItem('fluency_user_name');
+        if (window.ProfileSettings) {
+          ProfileSettings.clearProfileForm();
+        }
+        if (window.FluencyI18n) {
+          FluencyI18n.setLanguage('English', false);
+        }
         this.showAuthModal();
         showToast("You have been safely logged out.", "info");
       });
@@ -426,6 +491,9 @@ const AppState = {
       ProgressEngine.init();
     } else if (route === 'profile' || route === 'settings') {
       ProfileSettings.init();
+      if (route === 'profile') {
+        ProfileSettings.loadProfile();
+      }
     } else if (route === 'bug') {
       BugReportModule.init();
     } else if (route === 'admin-dashboard' || route === 'admin') {
@@ -757,6 +825,17 @@ function showFeedbackScreen(feedback, sessionData) {
             <div style="background: #FFFDF5; border: 1px solid #FFE082; border-radius: var(--radius-sm); padding: 8px 12px;">
               <strong style="color: #F57F17; font-size: 0.85rem;"><i class="fa-solid fa-repeat"></i> Repeated Words / Phrases:</strong>
               <div style="margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px;">${repBadges}</div>
+            </div>
+          `;
+        }
+
+        // Wrong Word Order
+        if (pm.wrong_order_words && pm.wrong_order_words.length > 0) {
+          const woBadges = pm.wrong_order_words.map(w => `<span style="background: #E0F2F1; color: #00695C; border: 1px solid #80CBC4; padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 0.85rem; margin-right: 4px;"><i class="fa-solid fa-arrow-right-arrow-left"></i> ${w}</span>`).join(' ');
+          detailsHtml += `
+            <div style="background: #F4FBFB; border: 1px solid #80CBC4; border-radius: var(--radius-sm); padding: 8px 12px;">
+              <strong style="color: #00695C; font-size: 0.85rem;"><i class="fa-solid fa-arrow-right-arrow-left"></i> Words Spoken Out of Order:</strong>
+              <div style="margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px;">${woBadges}</div>
             </div>
           `;
         }

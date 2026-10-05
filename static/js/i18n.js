@@ -28,7 +28,9 @@ const FluencyI18n = {
     'Marathi': 'mr',
     'Spanish': 'es',
     'French': 'fr',
-    'German': 'de'
+    'German': 'de',
+    'Japanese': 'ja',
+    'Chinese': 'zh'
   },
 
   // Comprehensive Localized Quotes
@@ -80,6 +82,22 @@ const FluencyI18n = {
       "Jede Übungseinheit stärkt deine Fähigkeit zu einer ruhigen Artikulation.",
       "Atme tief in den Bauch, lockere die Schultern und sprich beim Ausatmen.",
       "Fortschritt entsteht durch ruhige, beständige tägliche Wiederholung."
+    ],
+    'Japanese': [
+      "流暢さとは早く話すことではなく、心地よく話すことです。",
+      "焦った言葉よりも、落ち着いた一呼吸のほうが力を持っています。",
+      "あなたの思いには価値があります。焦らず伝える時間を取りましょう。",
+      "日々の穏やかな音読が、リラックスした発話の土台を築きます。",
+      "お腹から息を吸い、肩の力を抜いて、息を吐きながら話しましょう。",
+      "着実な毎日の積み重ねが、大きな自信へとつながります。"
+    ],
+    'Chinese': [
+      "流利不是说得快，而是说得轻松自然。",
+      "一次深思熟虑的停顿，远胜过急促慌张的话语。",
+      "你的想法值得被倾听，给它们自然流淌的时间。",
+      "每一次练习，都在帮助大脑建立从容表达的习惯。",
+      "用腹部呼吸，放松肩膀，在呼气时从容发声。",
+      "日复一日的平和练习，终将汇聚成稳固的自信。"
     ]
   },
 
@@ -1659,6 +1677,94 @@ const FluencyI18n = {
       'label_rigor': 'Feedback-Rigor',
       'label_theme': 'Farbschema',
       'save_settings': 'Einstellungen speichern'
+    },
+
+    'Japanese': {
+      'app_title': 'FLUENCY',
+      'app_tagline': 'やさしく、自信に満ちた発話の練習',
+      'nav_dashboard': 'ダッシュボード',
+      'nav_breath': '呼吸とリラックス',
+      'nav_reading': '音読モード',
+      'nav_media': '画像と動画',
+      'nav_convo': 'AI会話',
+      'nav_progress': '進捗状況',
+      'nav_profile': 'マイプロフィール',
+      'nav_settings': '設定・カスタマイズ',
+      'nav_logout': 'ログアウト',
+      'welcome_greeting': 'おかえりなさい',
+      'ready_to_practice': '練習を始めましょう',
+      'ready_to_practice_sub': 'プレッシャーのない安心できる環境で、あなたのペースで練習しましょう。',
+      'btn_start_practice': '練習を始める',
+      'btn_start_reading': '音読を始める',
+      'btn_back_dashboard': 'ダッシュボードへ戻る',
+      'reading_title': '音読スタジオ',
+      'reading_subtitle': '落ち着いたリズムで、一言ずつ丁寧に読み進めましょう。',
+      'btn_paste_custom': 'テキストを貼り付け',
+      'btn_new_passage': '新しい文章',
+      'btn_load_teleprompter': 'プロンプターに読み込む',
+      'filter_length': '文章の長さ:',
+      'filter_diff': '難易度:',
+      'len_all': 'すべての長さ',
+      'len_short': '短い (30-50語)',
+      'len_medium': '普通 (80-120語)',
+      'len_long': '長い (150語以上)',
+      'diff_all': 'すべての難易度',
+      'diff_easy': 'やさしい',
+      'diff_medium': '普通',
+      'diff_hard': '難しい',
+      'target_wpm_label': '目標速度:',
+      'btn_start_recording': '録音を開始',
+      'btn_stop_recording': '録音を停止',
+      'btn_submit_analysis': '分析を実行',
+      'btn_try_again': 'もう一度録音',
+      'recording_duration_label': '録音時間',
+      'save_profile': 'プロフィールを保存',
+      'save_settings': '設定を保存',
+      'practice_language': '言語設定'
+    },
+
+    'Chinese': {
+      'app_title': 'FLUENCY',
+      'app_tagline': '温和、坚定的言语流利练习',
+      'nav_dashboard': '控制面板',
+      'nav_breath': '呼吸与放松',
+      'nav_reading': '朗读模式',
+      'nav_media': '图像与视频',
+      'nav_convo': 'AI对话',
+      'nav_progress': '练习进度',
+      'nav_profile': '个人资料',
+      'nav_settings': '个性化设置',
+      'nav_logout': '退出登录',
+      'welcome_greeting': '欢迎回来',
+      'ready_to_practice': '准备开始练习',
+      'ready_to_practice_sub': '在零压力、无评判的温暖环境中，按照自己的节奏练习。',
+      'btn_start_practice': '开始练习',
+      'btn_start_reading': '开始朗读',
+      'btn_back_dashboard': '返回控制面板',
+      'reading_title': '朗读练习工坊',
+      'reading_subtitle': '以从容平缓的节奏朗读，建立稳定自然的声音流。',
+      'btn_paste_custom': '粘贴自定义文本',
+      'btn_new_passage': '换一篇',
+      'btn_load_teleprompter': '加载到提词器',
+      'filter_length': '篇幅长度:',
+      'filter_diff': '难度级别:',
+      'len_all': '全部长度',
+      'len_short': '短篇 (30-50字)',
+      'len_medium': '中篇 (80-120字)',
+      'len_long': '长篇 (150字以上)',
+      'diff_all': '全部难度',
+      'diff_easy': '轻松入门',
+      'diff_medium': '进阶短句',
+      'diff_hard': '多音节挑战',
+      'target_wpm_label': '目标语速:',
+      'btn_start_recording': '开始录音',
+      'btn_stop_recording': '停止录音',
+      'btn_submit_analysis': '提交分析',
+      'btn_try_again': '重新录音',
+      'recording_duration_label': '录音时长',
+      'save_profile': '保存资料',
+      'save_settings': '保存偏好设置',
+      'practice_language': '语言设置'
     }
   },
 
@@ -1666,7 +1772,7 @@ const FluencyI18n = {
    * Initialize Language on load
    */
   init() {
-    const savedLang = localStorage.getItem('fluency_language') || (window.AppState && window.AppState.user && window.AppState.user.preferred_language) || 'English';
+    const savedLang = (window.AppState && window.AppState.user && window.AppState.user.preferred_language) || localStorage.getItem('fluency_language') || 'English';
     this.setLanguage(savedLang, false);
     this.bindLanguageSelectors();
   },
@@ -1725,6 +1831,14 @@ const FluencyI18n = {
       settingsSelect.value = langName;
     }
 
+    // Reset Reading Practice cache and update audio engine language immediately
+    if (window.ReadingPractice) {
+      window.ReadingPractice.contentCache = {};
+      if (window.ReadingPractice.audioEngine && typeof window.ReadingPractice.audioEngine.setLanguage === 'function') {
+        window.ReadingPractice.audioEngine.setLanguage(langName);
+      }
+    }
+
     // Apply translations to DOM
     this.applyToDOM();
 
@@ -1781,7 +1895,7 @@ const FluencyI18n = {
       }
       const practiceAgeTag = document.getElementById('header-practice-age-tag');
       if (practiceAgeTag) {
-        practiceAgeTag.innerText = `${this.t('practice_age')}: ${window.AppState.user.practice_age} yrs`;
+        practiceAgeTag.innerText = `${this.t('label_age_group', 'Age Group')}: ${window.AppState.user.age_group || '18-23'}`;
       }
       const sidebarUserRole = document.getElementById('sidebar-user-role');
       if (sidebarUserRole) {
@@ -1794,9 +1908,15 @@ const FluencyI18n = {
       window.ProgressEngine.populateStatsUI(window.ProgressEngine.statsCache);
     }
 
-    // 4. Update Reading Mode passage if on screen
-    if (window.ReadingPractice && document.getElementById('screen-reading')?.style.display !== 'none') {
-      window.ReadingPractice.loadContent(false);
+    // 4. Update Reading Mode passage and speech recognition language
+    if (window.ReadingPractice) {
+      window.ReadingPractice.contentCache = {};
+      if (window.ReadingPractice.audioEngine && typeof window.ReadingPractice.audioEngine.setLanguage === 'function') {
+        window.ReadingPractice.audioEngine.setLanguage(this.currentLang);
+      }
+      if (document.getElementById('screen-reading')?.style.display !== 'none') {
+        window.ReadingPractice.loadContent(false);
+      }
     }
 
     // 5. Update Image & Video mode instruction

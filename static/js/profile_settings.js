@@ -7,13 +7,61 @@
 const ProfileSettings = {
   isInitialized: false,
 
-  init() {
+  async init() {
     if (!this.isInitialized) {
       this.bindEvents();
       this.isInitialized = true;
     }
     this.renderAvatarsGrid();
     this.renderMascotsGrid();
+    await this.loadProfile();
+  },
+
+  async loadProfile() {
+    try {
+      const res = await fetch('/api/user/profile');
+      if (!res.ok) {
+        if (res.status === 401 && window.AppState) {
+          AppState.showAuthModal();
+        }
+        return null;
+      }
+      const data = await res.json();
+      if (data && data.user) {
+        if (window.AppState) {
+          AppState.user = data.user;
+        }
+        this.renderAvatarsGrid();
+        this.populateProfileForm(data.user);
+        if (window.AppState && AppState.updateUserUI) {
+          AppState.updateUserUI();
+        }
+        return data.user;
+      }
+    } catch (err) {
+      console.error("Failed to fetch user profile from database:", err);
+      if (window.AppState && AppState.user) {
+        this.renderAvatarsGrid();
+        this.populateProfileForm(AppState.user);
+      }
+    }
+    return null;
+  },
+
+  clearProfileForm() {
+    const setVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    };
+    setVal('profile-input-name', '');
+    setVal('profile-input-email', '');
+    setVal('profile-input-birthdate', '');
+    setVal('profile-input-phone', '');
+    setVal('profile-input-bio', '');
+    setVal('profile-input-avatar', 'avatar-sunny');
+    setVal('profile-input-age-group', '18-23');
+    setVal('profile-input-lang', 'English');
+    this.highlightActiveAvatar('avatar-sunny');
   },
 
   bindEvents() {
@@ -166,35 +214,49 @@ const ProfileSettings = {
       if (el) el.value = val !== undefined && val !== null ? val : '';
     };
 
+    // 1. Full Name
     setVal('profile-input-name', user.name || '');
+
+    // 2. Email (disabled/readonly)
     setVal('profile-input-email', user.email || '');
-    setVal('profile-input-actual-age', user.actual_age || 21);
-    setVal('profile-input-practice-age', user.practice_age || 21);
+
+    // 3. Birthdate
     setVal('profile-input-birthdate', user.birthdate || '');
+
+    // 4. Phone
     setVal('profile-input-phone', user.phone || '');
+
+    // 5. Bio / Speaking Goals
     setVal('profile-input-bio', user.bio || '');
-    
-    // Avatar selection
+
+    // 6. Selected Avatar
     const userAvatar = user.selected_avatar || 'avatar-sunny';
     setVal('profile-input-avatar', userAvatar);
     this.highlightActiveAvatar(userAvatar);
 
+    // 7. Preferred Language
     const userLang = user.preferred_language || 'English';
     const profileLangSelect = document.getElementById('profile-input-lang');
     if (profileLangSelect) profileLangSelect.value = userLang;
-    
+
     const settingLangSelect = document.getElementById('setting-language');
     if (settingLangSelect) settingLangSelect.value = userLang;
 
-    // Age Group selectors
-    const ageGroup = user.age_group || '18-23';
+    // 8. Age Group (normalize dashes to ensure exact match with select options)
+    const normalizeAgeGroup = (val) => {
+      if (!val) return '18-23';
+      const clean = String(val).replace(/[\u2010-\u2015\u2212]/g, '-').trim();
+      const valid = ['6-11', '12-17', '18-23', '24-30', '31-40'];
+      return valid.includes(clean) ? clean : '18-23';
+    };
+    const normAge = normalizeAgeGroup(user.age_group);
     const profileAgeGroupSelect = document.getElementById('profile-input-age-group');
-    if (profileAgeGroupSelect) profileAgeGroupSelect.value = ageGroup;
+    if (profileAgeGroupSelect) profileAgeGroupSelect.value = normAge;
 
     const settingAgeGroupSelect = document.getElementById('setting-age-group');
-    if (settingAgeGroupSelect) settingAgeGroupSelect.value = ageGroup;
+    if (settingAgeGroupSelect) settingAgeGroupSelect.value = normAge;
 
-    // Settings fields
+    // 9. Personalization Settings fields
     const mascotInput = document.getElementById('setting-selected-mascot');
     if (mascotInput) mascotInput.value = user.selected_mascot || 'otter';
 
@@ -274,14 +336,22 @@ const ProfileSettings = {
   },
 
   async saveProfile() {
+    const nameInput = document.getElementById('profile-input-name');
+    const nameVal = nameInput ? nameInput.value.trim() : '';
+    if (!nameVal) {
+      if (window.showToast) window.showToast("Please enter your Full Name.", "error");
+      if (nameInput) nameInput.focus();
+      return;
+    }
+
     const payload = {
-      name: document.getElementById('profile-input-name').value.trim(),
+      name: nameVal,
       selected_avatar: document.getElementById('profile-input-avatar')?.value || 'avatar-sunny',
       age_group: document.getElementById('profile-input-age-group')?.value || '18-23',
-      birthdate: document.getElementById('profile-input-birthdate').value,
-      phone: document.getElementById('profile-input-phone').value.trim(),
-      bio: document.getElementById('profile-input-bio').value.trim(),
-      preferred_language: document.getElementById('profile-input-lang').value
+      birthdate: document.getElementById('profile-input-birthdate')?.value || '',
+      phone: document.getElementById('profile-input-phone')?.value.trim() || '',
+      bio: document.getElementById('profile-input-bio')?.value.trim() || '',
+      preferred_language: document.getElementById('profile-input-lang')?.value || 'English'
     };
 
     try {
@@ -291,18 +361,35 @@ const ProfileSettings = {
         body: JSON.stringify(payload)
       });
 
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        showToast(errData.error || "Failed to update profile.", "error");
+        return;
+      }
+
       const data = await res.json();
       if (data.user) {
         AppState.user = data.user;
         localStorage.setItem('fluency_selected_avatar', data.user.selected_avatar || 'avatar-sunny');
         localStorage.setItem('fluency_user_name', data.user.name || 'You');
+        localStorage.setItem('fluency_language', data.user.preferred_language || 'English');
+
+        // Centralized i18n update across entire app
         if (window.FluencyI18n) {
-          FluencyI18n.setLanguage(payload.preferred_language, false);
+          FluencyI18n.setLanguage(data.user.preferred_language, false);
         }
-        AppState.updateUserUI();
+
+        // Re-populate the form directly from the saved database values
+        this.populateProfileForm(data.user);
+
+        // Update application header, sidebar, and identity
+        if (window.AppState && AppState.updateUserUI) {
+          AppState.updateUserUI();
+        }
         if (window.ConversationPractice && ConversationPractice.updateUserIdentity) {
           ConversationPractice.updateUserIdentity();
         }
+
         showToast("Profile details updated successfully.", "success");
       }
     } catch (err) {

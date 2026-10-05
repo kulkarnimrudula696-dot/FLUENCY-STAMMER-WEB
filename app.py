@@ -397,10 +397,43 @@ def get_admin_dashboard_stats():
 
 
 # ----------------- USER PROFILE & SETTINGS -----------------
+@app.route('/api/user/profile', methods=['GET'])
+def get_user_profile():
+    if session.get('is_admin'):
+        admin_data = {
+            "id": "admin",
+            "name": "Swati Swami",
+            "email": "admin@fluency.com",
+            "admin_id": session.get('admin_id', ADMIN_ID),
+            "role": "admin",
+            "is_admin": True,
+            "selected_avatar": "avatar-spark",
+            "selected_mascot": "otter",
+            "age_group": "18-23",
+            "actual_age": 30,
+            "practice_age": 30,
+            "birthdate": "",
+            "phone": "",
+            "bio": "Administrator",
+            "preferred_language": "English",
+            "theme_preference": "warm_cream",
+            "created_at": datetime.datetime.utcnow().strftime("%Y-%m-%d")
+        }
+        return jsonify({"status": "success", "user": admin_data})
+
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Authentication required."}), 401
+
+    return jsonify({"status": "success", "user": user.to_dict()})
+
+
 @app.route('/api/user/profile', methods=['PUT'])
 def update_profile():
     user = get_current_user()
     if not user:
+        if session.get('is_admin'):
+            return jsonify({"message": "Admin profile updated.", "user": {"name": "Swati Swami"}})
         return jsonify({"error": "Authentication required."}), 401
 
     data = request.get_json() or {}
@@ -409,21 +442,28 @@ def update_profile():
     if 'selected_avatar' in data and data['selected_avatar']:
         user.selected_avatar = data['selected_avatar'].strip()
     if 'actual_age' in data:
-        user.actual_age = int(data['actual_age'])
+        try:
+            user.actual_age = int(data['actual_age'])
+        except (ValueError, TypeError):
+            pass
     if 'practice_age' in data:
-        user.practice_age = int(data['practice_age'])
+        try:
+            user.practice_age = int(data['practice_age'])
+        except (ValueError, TypeError):
+            pass
     if 'age_group' in data and data['age_group']:
         user.age_group = content_data.get_age_group_id(data['age_group'])
     if 'birthdate' in data:
-        user.birthdate = data['birthdate']
+        user.birthdate = data['birthdate'] or ""
     if 'phone' in data:
-        user.phone = data['phone']
+        user.phone = data['phone'] or ""
     if 'bio' in data:
-        user.bio = data['bio']
-    if 'preferred_language' in data:
-        user.preferred_language = data['preferred_language']
+        user.bio = data['bio'] or ""
+    if 'preferred_language' in data and data['preferred_language']:
+        user.preferred_language = data['preferred_language'].strip()
 
     db.session.commit()
+    db.session.refresh(user)
     return jsonify({"message": "Profile updated successfully.", "user": user.to_dict()})
 
 
@@ -467,9 +507,10 @@ def get_reading_content():
     age_group = content_data.get_age_group_id(age_group_param)
     length_type = request.args.get('length_type', 'all').lower().strip()
     difficulty = request.args.get('difficulty', 'all').lower().strip()
+    language = request.args.get('language') or (user.preferred_language if user else 'English')
 
-    items = content_data.get_reading_for_age_and_diff(age_group=age_group, difficulty=difficulty, length_type=length_type)
-    return jsonify({"items": items, "count": len(items), "age_group": age_group})
+    items = content_data.get_reading_for_age_and_diff(age_group=age_group, difficulty=difficulty, length_type=length_type, language=language)
+    return jsonify({"items": items, "count": len(items), "age_group": age_group, "language": language})
 
 
 @app.route('/api/content/images', methods=['GET'])

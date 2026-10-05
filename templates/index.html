@@ -661,7 +661,7 @@
             </div>
 
             <div style="font-size: 0.88rem; font-weight: 700; color: #6B4632;">
-              <i class="fa-solid fa-bullseye"></i> <span data-i18n="target_wpm_label">Target: 120-145 WPM</span>
+              <i class="fa-solid fa-bullseye"></i> <span data-i18n="target_wpm_label">Target:</span> <span id="reading-target-wpm">120-145 WPM</span>
             </div>
           </div>
 
@@ -676,6 +676,11 @@
                 <span style="font-size: 0.85rem; font-weight: 800; color: #8B5A3C;" id="reading-word-count-badge">48 words</span>
                 <div style="font-size: 0.78rem; color: var(--text-muted);" id="reading-focus-sound">Diaphragmatic pauses</div>
               </div>
+            </div>
+
+            <!-- Reading Instruction & Helpful Hint -->
+            <div id="reading-instruction-box" style="font-size: 0.92rem; color: #6B4632; background: #FAF5F0; border-left: 3px solid #8B5A3C; padding: 10px 14px; border-radius: var(--radius-sm); margin: 12px 0 16px 0;">
+              <strong>💡 <span id="reading-instruction-label">Reading Instruction:</span></strong> <span id="reading-instruction-text">Breathe calmly and read at a steady pace.</span>
             </div>
 
             <div class="reading-passage-text" id="reading-text-body">
@@ -1803,6 +1808,8 @@
                   <option value="Spanish">Spanish (Español)</option>
                   <option value="French">French (Français)</option>
                   <option value="German">German (Deutsch)</option>
+                  <option value="Japanese">Japanese (日本語)</option>
+                  <option value="Chinese">Chinese (中文)</option>
                 </select>
               </div>
 
@@ -1922,6 +1929,8 @@
                   <option value="Spanish">Spanish (Español)</option>
                   <option value="French">French (Français)</option>
                   <option value="German">German (Deutsch)</option>
+                  <option value="Japanese">Japanese (日本語)</option>
+                  <option value="Chinese">Chinese (中文)</option>
                 </select>
               </div>
 
