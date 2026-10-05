@@ -1,0 +1,2194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FLUENCY — Practice your voice. Build your confidence.</title>
+  
+  <!-- Google Fonts: Nunito -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Chart.js for Progress Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  
+  <!-- Application Stylesheets -->
+  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="stylesheet" href="/static/css/modes.css">
+</head>
+<body>
+
+<div id="app-container">
+  
+  <!-- =========================================================================
+       SIDEBAR NAVIGATION (DEFAULT CLOSED, SLIDES IN/OUT VIA MENU BUTTON)
+       ========================================================================= -->
+  <aside class="fluency-sidebar" id="fluency-sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mascot-badge" id="sidebar-mascot-avatar" data-route="dashboard">
+        <!-- Mascot Injected via JS -->
+      </div>
+      <div class="brand-text">
+        <h2>FLUENCY</h2>
+        <span data-i18n="brand_tagline">Practice Your Voice</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item" id="sidebar-nav-admin" data-route="admin-dashboard" style="display: none; background: #FEF3C7; color: #92400E; font-weight: 800; border: 1px solid #FDE68A;">
+        <i class="fa-solid fa-shield-halved" style="color: #D97706;"></i>
+        <span>Admin Dashboard</span>
+      </button>
+      <div class="nav-section-label" data-i18n="nav_companion">Practice Companion</div>
+      <button class="nav-item active" data-route="dashboard">
+        <i class="fa-solid fa-house"></i>
+        <span data-i18n="nav_dashboard">Dashboard</span>
+      </button>
+      <button class="nav-item" data-route="breath">
+        <i class="fa-solid fa-lungs"></i>
+        <span data-i18n="nav_breath">Breath & Relax</span>
+      </button>
+      <button class="nav-item" data-route="reading">
+        <i class="fa-solid fa-book-open"></i>
+        <span data-i18n="nav_reading">Reading Mode</span>
+      </button>
+      <button class="nav-item" data-route="video">
+        <i class="fa-solid fa-photo-film"></i>
+        <span data-i18n="nav_video">Image & Video</span>
+      </button>
+      <button class="nav-item" data-route="therapy">
+        <i class="fa-solid fa-graduation-cap"></i>
+        <span data-i18n="nav_therapy">Videos on Therapy</span>
+      </button>
+      <button class="nav-item" data-route="conversation">
+        <i class="fa-solid fa-comments"></i>
+        <span data-i18n="nav_conversation">AI Conversation</span>
+      </button>
+      <button class="nav-item" data-route="tongue-twister">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <span data-i18n="nav_twister">Tongue Twister</span>
+      </button>
+
+      <div class="nav-section-label" data-i18n="nav_journey">Your Journey</div>
+      <button class="nav-item" data-route="progress">
+        <i class="fa-solid fa-chart-line"></i>
+        <span data-i18n="nav_progress">My Progress</span>
+      </button>
+      <button class="nav-item" data-route="profile">
+        <i class="fa-solid fa-user"></i>
+        <span data-i18n="nav_profile">My Profile</span>
+      </button>
+      <button class="nav-item" data-route="settings">
+        <i class="fa-solid fa-sliders"></i>
+        <span data-i18n="nav_settings">Personalization</span>
+      </button>
+
+      <div class="nav-section-label" data-i18n="nav_support">Support</div>
+      <button class="nav-item" data-route="about">
+        <i class="fa-solid fa-circle-info"></i>
+        <span data-i18n="nav_about">About FLUENCY</span>
+      </button>
+      <button class="nav-item" data-route="bug">
+        <i class="fa-solid fa-bug"></i>
+        <span data-i18n="nav_bug">Report a Bug</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-mini-card" data-route="profile">
+        <div class="user-avatar-mini" id="sidebar-user-avatar">
+          <i class="fa-solid fa-user-astronaut" style="color: var(--brand-brown);"></i>
+        </div>
+        <div class="user-meta-mini">
+          <div class="user-name-mini" id="sidebar-user-name">Practice Buddy</div>
+          <div class="user-role-mini" id="sidebar-user-role" data-i18n="confidence_journey">Confidence Journey</div>
+        </div>
+      </div>
+      <button class="nav-item btn-action-logout" style="color: #C0392B; padding: 10px 14px;">
+        <i class="fa-solid fa-right-from-bracket" style="color: #C0392B;"></i>
+        <span data-i18n="nav_logout">Log Out</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Sidebar Overlay Backdrop for Mobile & Desktop click-away -->
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+  <!-- =========================================================================
+       MAIN CONTENT CONTAINER
+       ========================================================================= -->
+  <main class="fluency-main">
+    
+    <!-- Header Bar -->
+    <header class="fluency-header">
+      <div class="header-left">
+        <button class="sidebar-toggle-btn mobile-menu-btn" id="btn-sidebar-toggle" title="Toggle Navigation Sidebar" aria-label="Toggle Sidebar">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="header-title-container">
+          <div class="header-page-title" id="header-user-name">Welcome, Practice Buddy 👋</div>
+          <div class="header-tagline" data-i18n="header_tagline">“Practice your voice. Build your confidence.”</div>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="header-streak-badge" title="Daily Practice Streak">
+          <i class="fa-solid fa-fire" style="color: #E65100;"></i>
+          <span id="header-streak-count">1 Day</span>
+        </div>
+        <div class="header-practice-age-pill" id="header-practice-age-tag" data-route="settings" title="Click to adjust Practice Age">
+          Practice Age: 21 yrs
+        </div>
+        <div id="header-mascot-badge" style="cursor: pointer;" data-route="settings" title="Your selected practice mascot">
+          <!-- Mascot -->
+        </div>
+      </div>
+    </header>
+
+    <!-- App Views Wrapper -->
+    <div class="content-wrapper">
+
+      <!-- =====================================================================
+           SCREEN: ADMIN DASHBOARD (ADMIN ROLE)
+           ===================================================================== -->
+      <section class="app-screen-view" id="screen-admin-dashboard" style="display: none;">
+        <div class="dashboard-grid">
+          
+          <!-- Admin Hero Banner -->
+          <div class="welcome-banner" style="background: linear-gradient(135deg, #FFFDF8 0%, #FEF3C7 100%); border: 1.5px solid #F59E0B;">
+            <div class="welcome-text-side">
+              <div class="welcome-badge" style="background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A;">
+                <i class="fa-solid fa-shield-halved"></i> <span>Platform Control Center</span>
+              </div>
+              <h1 class="welcome-title" style="color: #78350F;">Administrator Dashboard</h1>
+              <p style="font-size: 1.05rem; color: #92400E;">
+                Logged in as <strong>Swati Swami</strong> (Admin ID: <code>MruSwatiSwami</code>). Monitor live platform activity, speech practice logs, registered user accounts, and system analytics.
+              </p>
+              <div style="display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap;">
+                <button class="btn btn-primary btn-sm" id="btn-admin-refresh" style="background: #D97706; border-color: #D97706;">
+                  <i class="fa-solid fa-arrows-rotate"></i> Refresh Data
+                </button>
+                <button class="btn btn-ghost btn-sm btn-action-logout" style="color: #C0392B; border: 1px solid #E5E7EB;">
+                  <i class="fa-solid fa-right-from-bracket"></i> Log Out
+                </button>
+              </div>
+            </div>
+
+            <div class="welcome-mascot-side">
+              <div class="mascot-display-container">
+                <div class="mascot-bubble" style="background: #FFFBEB; border-color: #FCD34D; color: #92400E;">
+                  Admin access verified! All database records and session statistics are synced in real time.
+                </div>
+                <div id="admin-mascot-container">
+                  <!-- Mascot rendered via JS -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Admin KPI Summary Cards -->
+          <div class="stats-summary-row" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+            <div class="stat-card">
+              <div class="stat-icon-wrapper" style="background: #EBF8FF; color: #3182CE;">
+                <i class="fa-solid fa-users"></i>
+              </div>
+              <div class="stat-meta">
+                <div class="stat-label">Registered Users</div>
+                <div class="stat-value" id="admin-stat-users">0</div>
+                <div class="stat-subtext">Active MySQL accounts</div>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon-wrapper" style="background: #FEF3C7; color: #D97706;">
+                <i class="fa-solid fa-microphone-lines"></i>
+              </div>
+              <div class="stat-meta">
+                <div class="stat-label">Practice Sessions</div>
+                <div class="stat-value" id="admin-stat-sessions">0</div>
+                <div class="stat-subtext">Reading, Media, Convo</div>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon-wrapper" style="background: #ECFDF5; color: #059669;">
+                <i class="fa-solid fa-clock"></i>
+              </div>
+              <div class="stat-meta">
+                <div class="stat-label">Total Practice Time</div>
+                <div class="stat-value" id="admin-stat-minutes">0m</div>
+                <div class="stat-subtext">Cumulative speaking</div>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon-wrapper" style="background: #FEE2E2; color: #DC2626;">
+                <i class="fa-solid fa-bug"></i>
+              </div>
+              <div class="stat-meta">
+                <div class="stat-label">Bug Reports</div>
+                <div class="stat-value" id="admin-stat-bugs">0</div>
+                <div class="stat-subtext">Support tickets logged</div>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon-wrapper" style="background: #F3E8FF; color: #7C3AED;">
+                <i class="fa-solid fa-database"></i>
+              </div>
+              <div class="stat-meta">
+                <div class="stat-label">MySQL Database</div>
+                <div class="stat-value" style="font-size: 1.15rem; color: #059669;" id="admin-stat-db">fluency_db</div>
+                <div class="stat-subtext">Status: Connected</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Admin Section 1: Registered Users Directory -->
+          <div class="section-card" style="margin-top: 15px;">
+            <div class="section-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+              <div>
+                <h2 style="font-size: 1.3rem; margin: 0; display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-user-group" style="color: var(--brand-brown);"></i> User Directory
+                </h2>
+                <span style="font-size: 0.9rem; color: var(--text-muted);">Registered accounts and their overall practice engagement</span>
+              </div>
+            </div>
+            <div class="table-responsive" style="overflow-x: auto;">
+              <table class="table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                  <tr style="background: var(--bg-cream-card); text-align: left; font-size: 0.88rem; color: var(--text-dark);">
+                    <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">User ID</th>
+                    <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">Name</th>
+                    <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">Email</th>
+                    <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">Age Group</th>
+                    <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">Avatar</th>
+                    <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">Joined</th>
+                    <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">Total Sessions</th>
+                    <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">Avg Clarity</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-users-table-body">
+                  <!-- Rendered via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Admin Section 2: Recent Practice Logs Stream -->
+          <div class="section-card" style="margin-top: 20px;">
+            <div class="section-card-header" style="margin-bottom: 15px;">
+              <h2 style="font-size: 1.3rem; margin: 0; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-microphone-waveform" style="color: var(--brand-brown);"></i> Recent Practice Sessions
+              </h2>
+              <span style="font-size: 0.9rem; color: var(--text-muted);">Live speech analysis logs across Reading, Media, Breathing, and AI Conversation modes</span>
+            </div>
+            <div class="table-responsive" style="overflow-x: auto;">
+              <table class="table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                  <tr style="background: var(--bg-cream-card); text-align: left; font-size: 0.88rem; color: var(--text-dark);">
+                    <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">ID</th>
+                    <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">Mode</th>
+                    <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">Session Title</th>
+                    <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">Duration</th>
+                    <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">WPM</th>
+                    <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">Clarity</th>
+                    <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">Fillers / Pauses</th>
+                    <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">Recorded At</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-sessions-table-body">
+                  <!-- Rendered via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Admin Section 3: Bug Reports & Support Tickets -->
+          <div class="section-card" style="margin-top: 20px;">
+            <div class="section-card-header" style="margin-bottom: 15px;">
+              <h2 style="font-size: 1.3rem; margin: 0; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-shield-virus" style="color: var(--brand-brown);"></i> User Bug Reports & Feedback
+              </h2>
+              <span style="font-size: 0.9rem; color: var(--text-muted);">Incoming issue tickets submitted by users</span>
+            </div>
+            <div class="table-responsive" style="overflow-x: auto;">
+              <table class="table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                  <tr style="background: var(--bg-cream-card); text-align: left; font-size: 0.88rem; color: var(--text-dark);">
+                    <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">Ticket Code</th>
+                    <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">Title</th>
+                    <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">Screen / Page</th>
+                    <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">Severity</th>
+                    <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">Description</th>
+                    <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">Status</th>
+                    <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">Date</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-bugs-table-body">
+                  <!-- Rendered via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           SCREEN 1: DASHBOARD
+           ===================================================================== -->
+      <section class="app-screen-view" id="screen-dashboard">
+        <div class="dashboard-grid">
+          
+          <!-- Welcome Hero Banner -->
+          <div class="welcome-banner">
+            <div class="welcome-text-side">
+              <div class="welcome-badge">
+                <i class="fa-solid fa-seedling"></i> <span data-i18n="welcome_badge">Safe & Judgement-Free Practice</span>
+              </div>
+              <h1 class="welcome-title" id="dashboard-welcome-title">Welcome back!</h1>
+              <p style="font-size: 1.05rem; color: var(--text-dark);" data-i18n="welcome_sub">
+                Ready to take a few calm moments for your voice today? Choose any practice mode below at your own unhurried pace.
+              </p>
+              <div class="welcome-quote" id="dashboard-motivational-quote">
+                “Fluency is not about speaking fast; it’s about speaking with ease.”
+              </div>
+            </div>
+
+            <div class="welcome-mascot-side">
+              <div class="mascot-display-container">
+                <div class="mascot-bubble" id="dashboard-mascot-bubble" data-i18n="mascot_bubble_greeting">
+                  Hello! I'm here to practice with you today. Let's take an easy breath!
+                </div>
+                <div id="dashboard-mascot-container">
+                  <!-- Mascot SVG -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Progress Highlights Row -->
+          <div class="stats-summary-row">
+            <div class="stat-card">
+              <div class="stat-icon-wrapper stat-icon-streak">
+                <i class="fa-solid fa-fire"></i>
+              </div>
+              <div class="stat-meta">
+                <div class="stat-label" data-i18n="stat_active_streak">Active Streak</div>
+                <div class="stat-value" id="dash-streak-count">1 Day</div>
+                <div class="stat-subtext" data-i18n="stat_keep_momentum">Keep the momentum</div>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon-wrapper stat-icon-sessions">
+                <i class="fa-solid fa-microphone-lines"></i>
+              </div>
+              <div class="stat-meta">
+                <div class="stat-label" data-i18n="stat_total_sessions">Total Sessions</div>
+                <div class="stat-value" id="dash-sessions-count">0</div>
+                <div class="stat-subtext" id="dash-practice-days">0 Practice Days</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Practice Modes (4 Distinct Cards) -->
+          <div>
+            <div class="section-header">
+              <div>
+                <h2 class="section-title" data-i18n="ready_to_practice">Ready to Practice</h2>
+                <div class="section-subtitle" data-i18n="ready_to_practice_sub">Pick a speaking mode that fits your energy today. No pressure, no judgment.</div>
+              </div>
+            </div>
+
+            <div class="modes-grid">
+              <!-- Mode 1: Breath & Relax -->
+              <div class="mode-card mode-card-breath" data-route="breath">
+                <div class="mode-card-header">
+                  <div class="mode-icon-badge">
+                    <i class="fa-solid fa-lungs"></i>
+                  </div>
+                </div>
+                <div>
+                  <h3 class="mode-card-title">🫁 <span data-i18n="mode_breath_title">Breath & Relax</span></h3>
+                  <p class="mode-card-desc" data-i18n="mode_breath_desc">
+                    Calm diaphragmatic breathing cycles to release shoulder tension and steady your vocal cords before speaking.
+                  </p>
+                </div>
+                <div class="mode-card-footer">
+                  <span style="font-size: 0.88rem; font-weight: 700; color: #4F5D3A;"><i class="fa-regular fa-clock"></i> 1 - 10 mins</span>
+                  <button class="btn btn-mode-start btn-sm"><span data-i18n="btn_start_breathing">Start Breathing</span> <i class="fa-solid fa-arrow-right"></i></button>
+                </div>
+              </div>
+
+              <!-- Mode 2: Reading Mode -->
+              <div class="mode-card mode-card-reading" data-route="reading">
+                <div class="mode-card-header">
+                  <div class="mode-icon-badge">
+                    <i class="fa-solid fa-book-open"></i>
+                  </div>
+                </div>
+                <div>
+                  <h3 class="mode-card-title">📖 <span data-i18n="mode_reading_title">Reading Mode</span></h3>
+                  <p class="mode-card-desc" data-i18n="mode_reading_desc">
+                    Read curated passages aloud with an interactive teleprompter. Measure your pace (WPM), pauses, and syllable ease.
+                  </p>
+                </div>
+                <div class="mode-card-footer">
+                  <span style="font-size: 0.88rem; font-weight: 700; color: #6B4632;"><i class="fa-solid fa-layer-group"></i> Short / Med / Long</span>
+                  <button class="btn btn-mode-start btn-sm"><span data-i18n="btn_start_reading">Start Reading</span> <i class="fa-solid fa-arrow-right"></i></button>
+                </div>
+              </div>
+
+              <!-- Mode 3: Image & Video Mode -->
+              <div class="mode-card mode-card-media" data-route="video" style="background: linear-gradient(145deg, #FFF9E6 0%, #FFFFFF 100%); border-color: #FFE5A3;">
+                <div class="mode-card-header">
+                  <div class="mode-icon-badge" style="background: #FFF0B8; color: #9A633F;">
+                    <i class="fa-solid fa-photo-film"></i>
+                  </div>
+                </div>
+                <div>
+                  <h3 class="mode-card-title">🖼️🎬 <span data-i18n="mode_media_title">Image & Video</span></h3>
+                  <p class="mode-card-desc" data-i18n="mode_media_desc">
+                    Watch short animated stories or observe everyday scenes (Easy, Medium, Hard), then explain what you see in your own words.
+                  </p>
+                </div>
+                <div class="mode-card-footer">
+                  <span style="font-size: 0.88rem; font-weight: 700; color: #9A633F;"><i class="fa-solid fa-layer-group"></i> 20 Videos & 20 Images</span>
+                  <button class="btn btn-mode-start btn-sm" style="background: #FFC83D; color: #3D2B24; border: 1.5px solid #E5A81A;"><span data-i18n="btn_start_practice">Start Practice</span> <i class="fa-solid fa-arrow-right"></i></button>
+                </div>
+              </div>
+
+              <!-- Mode 4: Conversation Mode -->
+              <div class="mode-card mode-card-convo" data-route="conversation">
+                <div class="mode-card-header">
+                  <div class="mode-icon-badge">
+                    <i class="fa-solid fa-comments"></i>
+                  </div>
+                </div>
+                <div>
+                  <h3 class="mode-card-title">💬 <span data-i18n="mode_convo_title">AI Conversation</span></h3>
+                  <p class="mode-card-desc" data-i18n="mode_convo_desc">
+                    Real 1-on-1 spoken roleplays with an AI partner. Practice ordering at cafés, job interviews, and social small talk.
+                  </p>
+                </div>
+                <div class="mode-card-footer">
+                  <span style="font-size: 0.88rem; font-weight: 700; color: #C65F32;"><i class="fa-solid fa-video"></i> Optional Camera Mirror</span>
+                  <button class="btn btn-mode-start btn-sm"><span data-i18n="btn_start_talking">Start Talking</span> <i class="fa-solid fa-arrow-right"></i></button>
+                </div>
+              </div>
+
+              <!-- Mode 5: Videos on Therapy -->
+              <div class="mode-card mode-card-therapy" data-route="therapy" style="background: linear-gradient(145deg, #FAF6F0 0%, #FFFFFF 100%); border-color: #E8D9CE;">
+                <div class="mode-card-header">
+                  <div class="mode-icon-badge" style="background: #F4ECE6; color: #9A633F;">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                  </div>
+                </div>
+                <div>
+                  <h3 class="mode-card-title">🎓🎬 <span data-i18n="mode_therapy_title">Videos on Therapy</span></h3>
+                  <p class="mode-card-desc" data-i18n="mode_therapy_desc">
+                    Watch helpful videos to understand stuttering, build confidence, and learn communication strategies.
+                  </p>
+                </div>
+                <div class="mode-card-footer">
+                  <span style="font-size: 0.88rem; font-weight: 700; color: #9A633F;"><i class="fa-solid fa-film"></i> 20 Curated Resources</span>
+                  <button class="btn btn-mode-start btn-sm" style="background: var(--brand-brown); color: #FFFFFF; border: 1.5px solid var(--brand-brown-hover);"><span data-i18n="btn_explore_therapy">Explore Videos</span> <i class="fa-solid fa-arrow-right"></i></button>
+                </div>
+              </div>
+
+              <!-- Mode 6: Tongue Twister Mode -->
+              <div class="mode-card mode-card-twister" data-route="tongue-twister" style="background: linear-gradient(145deg, #FFF6F0 0%, #FFFFFF 100%); border-color: #FFD6C0;">
+                <div class="mode-card-header">
+                  <div class="mode-icon-badge" style="background: #FFE3D4; color: #D35400;">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                  </div>
+                </div>
+                <div>
+                  <h3 class="mode-card-title">🌀👅 <span data-i18n="mode_twister_title">Tongue Twister</span></h3>
+                  <p class="mode-card-desc" data-i18n="mode_twister_desc">
+                    Challenge your speech motor agility and phoneme coordination with tricky word combinations across Easy, Medium, and Hard levels.
+                  </p>
+                </div>
+                <div class="mode-card-footer">
+                  <span style="font-size: 0.88rem; font-weight: 700; color: #D35400;"><i class="fa-solid fa-bolt"></i> Easy / Med / Hard</span>
+                  <button class="btn btn-mode-start btn-sm" style="background: #E65100; color: #FFFFFF; border: 1.5px solid #BF360C;"><span data-i18n="btn_start_twister">Try Twisters</span> <i class="fa-solid fa-arrow-right"></i></button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+
+        </div>
+      </section>
+
+
+      <!-- =====================================================================
+           SCREEN 2: BREATH & RELAX MODE
+           ===================================================================== -->
+      <section class="app-screen-view" id="screen-breath" style="display: none;">
+        <div class="breath-screen-wrapper">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <button class="btn btn-secondary btn-sm" data-route="dashboard">
+              <i class="fa-solid fa-arrow-left"></i> <span data-i18n="btn_back_dashboard">Back to Dashboard</span>
+            </button>
+            <div class="breath-pill-header">
+              <i class="fa-solid fa-leaf"></i> <span data-i18n="breath_pill">Peaceful Diaphragmatic Regulation</span>
+            </div>
+          </div>
+
+          <div class="breath-hero-box">
+            <h2 style="color: #34452B; font-size: 1.8rem; margin-bottom: 6px;" data-i18n="breath_hero_title">Breathe & Ground Your Voice</h2>
+            <p style="color: #4F5D3A; max-width: 600px; margin: 0 auto 24px auto;" data-i18n="breath_hero_desc">
+              Follow the expanding circle with your belly breath. Relax your jaw, lower your shoulders, and speak easily on the exhale.
+            </p>
+
+            <!-- Duration Selector -->
+            <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+              <div class="duration-pills-group">
+                <button class="duration-pill-btn" data-mins="1" data-i18n="dur_1min">1 Min</button>
+                <button class="duration-pill-btn active" data-mins="3" data-i18n="dur_3mins">3 Mins</button>
+                <button class="duration-pill-btn" data-mins="5" data-i18n="dur_5mins">5 Mins</button>
+                <button class="duration-pill-btn" data-mins="10" data-i18n="dur_10mins">10 Mins</button>
+              </div>
+            </div>
+
+            <!-- Breathing Visualizer -->
+            <div class="breath-visualizer-container">
+              <div class="breath-ring-outer"></div>
+              <div class="breath-circle-main" id="breath-circle">
+                <div class="breath-timer-counter" id="breath-phase-countdown">4</div>
+                <div style="font-size: 0.8rem; font-weight: 800; color: #34452B; text-transform: uppercase;" data-i18n="seconds_label">Seconds</div>
+              </div>
+            </div>
+
+            <div class="breath-instruction-text" id="breath-phase-text" data-i18n="breath_ready">Ready to Breathe</div>
+            <div style="font-size: 1.1rem; font-weight: 700; color: #4F5D3A; margin-top: 6px;" id="breath-total-time">03:00 Remaining</div>
+
+            <!-- Controls Row -->
+            <div class="breath-controls-row">
+              <button class="btn btn-primary btn-lg" id="btn-breath-start" style="background: #4F5D3A; min-width: 180px;" onclick="BreathingPractice.start()">
+                <i class="fa-solid fa-play"></i> <span data-i18n="btn_begin_breathing">Begin Breathing</span>
+              </button>
+              <button class="btn btn-secondary btn-lg" id="btn-breath-pause" style="display: none; border-color: #4F5D3A; color: #4F5D3A;" onclick="BreathingPractice.pause()">
+                <i class="fa-solid fa-pause"></i> <span data-i18n="btn_pause">Pause</span>
+              </button>
+              <button class="btn btn-accent btn-lg" id="btn-breath-stop" style="display: none;" onclick="BreathingPractice.stop()">
+                <i class="fa-solid fa-check"></i> <span data-i18n="btn_complete_log">Complete & Log</span>
+              </button>
+              <button class="btn btn-ghost" id="btn-toggle-breath-cam">
+                <i class="fa-solid fa-video"></i> <span data-i18n="btn_cam_on">Camera On</span>
+              </button>
+              <button class="btn btn-ghost" id="btn-toggle-chimes">
+                <i class="fa-solid fa-volume-high"></i> <span data-i18n="btn_sound_on">Sound On</span>
+              </button>
+            </div>
+
+            <!-- Optional Camera Mirror Box -->
+            <div class="breath-camera-container" id="breath-cam-box" style="display: none; margin-top: 24px;">
+              <video id="breath-cam-video" autoplay playsinline muted></video>
+            </div>
+
+            <!-- Breathing Mascot Buddy Companion -->
+            <div style="margin-top: 30px; display: flex; align-items: center; justify-content: center; gap: 14px;">
+              <div id="breath-mascot-container">
+                <!-- Breathing Mascot SVG -->
+              </div>
+              <div style="text-align: left; max-width: 320px;">
+                <div style="font-weight: 800; color: #34452B; font-size: 0.95rem;" data-i18n="breath_buddy_title">Breathing with your buddy</div>
+                <div style="font-size: 0.85rem; color: #4F5D3A;" data-i18n="breath_buddy_desc">Smooth, slow inhalation keeps speech blocks from triggering.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- =====================================================================
+           SCREEN 3: READING MODE
+           ===================================================================== -->
+      <section class="app-screen-view" id="screen-reading" style="display: none;">
+        <div class="reading-screen-wrapper">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <button class="btn btn-secondary btn-sm" data-route="dashboard">
+              <i class="fa-solid fa-arrow-left"></i> <span data-i18n="btn_back_dashboard">Back to Dashboard</span>
+            </button>
+            <div style="display: flex; gap: 10px;">
+              <button class="btn btn-secondary btn-sm" id="btn-custom-reading-toggle">
+                <i class="fa-solid fa-pen-to-square"></i> <span data-i18n="btn_paste_custom">Paste Custom Text</span>
+              </button>
+              <button class="btn btn-secondary btn-sm" id="btn-next-reading">
+                <i class="fa-solid fa-shuffle"></i> <span data-i18n="btn_new_passage">New Passage</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Custom Text Input Box (Collapsible) -->
+          <div class="fluency-card" id="custom-reading-input-box" style="display: none; border: 2px dashed var(--brand-brown);">
+            <h4 style="margin-bottom: 10px; color: #3A2721;" data-i18n="custom_text_title">Paste Your Own Text or Presentation Script</h4>
+            <textarea class="form-textarea" id="custom-reading-textarea" rows="4" data-i18n="custom_text_placeholder" placeholder="Type or paste any paragraph, speech script, or presentation intro here..."></textarea>
+            <div style="margin-top: 12px; display: flex; justify-content: flex-end; gap: 10px;">
+              <button class="btn btn-primary btn-sm" id="btn-apply-custom-reading"><span data-i18n="btn_load_teleprompter">Load to Teleprompter</span></button>
+            </div>
+          </div>
+
+          <!-- Filters Row -->
+          <div class="reading-filter-bar">
+            <div class="filter-group-inline">
+              <span class="filter-group-label" data-i18n="filter_length">Length:</span>
+              <select class="form-select" id="reading-filter-length" style="padding: 8px 14px; width: auto;">
+                <option value="all" data-i18n="len_all">All Lengths</option>
+                <option value="short" data-i18n="len_short">Short (30-50 words)</option>
+                <option value="medium" data-i18n="len_medium">Medium (80-120 words)</option>
+                <option value="long" data-i18n="len_long">Long (150+ words)</option>
+              </select>
+            </div>
+
+            <div class="filter-group-inline">
+              <span class="filter-group-label" data-i18n="filter_diff">Difficulty:</span>
+              <select class="form-select" id="reading-filter-diff" style="padding: 8px 14px; width: auto;">
+                <option value="all" data-i18n="diff_all">All Difficulties</option>
+                <option value="easy" data-i18n="diff_easy">Easy (Flow & Comfort)</option>
+                <option value="medium" data-i18n="diff_medium">Medium (Phrasing)</option>
+                <option value="hard" data-i18n="diff_hard">Hard (Multisyllabic)</option>
+              </select>
+            </div>
+
+            <div style="font-size: 0.88rem; font-weight: 700; color: #6B4632;">
+              <i class="fa-solid fa-bullseye"></i> <span data-i18n="target_wpm_label">Target: 120-145 WPM</span>
+            </div>
+          </div>
+
+          <!-- Teleprompter Card -->
+          <div class="teleprompter-card">
+            <div class="teleprompter-header">
+              <div>
+                <span class="mode-tag" id="reading-category-badge" style="background: #F4E8DC; color: #6B4632;">Everyday Life</span>
+                <h3 style="color: #3A2721; font-size: 1.5rem; margin-top: 6px;" id="reading-title">The Art of Slowing Down</h3>
+              </div>
+              <div style="text-align: right;">
+                <span style="font-size: 0.85rem; font-weight: 800; color: #8B5A3C;" id="reading-word-count-badge">48 words</span>
+                <div style="font-size: 0.78rem; color: var(--text-muted);" id="reading-focus-sound">Diaphragmatic pauses</div>
+              </div>
+            </div>
+
+            <div class="reading-passage-text" id="reading-text-body">
+              Loading reading passage...
+            </div>
+
+            <!-- Live Transcript Bubble -->
+            <div id="reading-live-transcript" style="font-size: 0.92rem; color: #6B4632; margin-top: 18px; min-height: 24px; font-style: italic;"></div>
+
+            <!-- Real-Time Waveform Canvas -->
+            <canvas class="waveform-canvas" id="reading-waveform-canvas" width="800" height="80"></canvas>
+          </div>
+
+          <!-- Recorder Control Bar -->
+          <div class="recorder-control-bar">
+            <div style="display: flex; align-items: center; gap: 16px;">
+              <div class="mic-pulse-indicator" id="reading-mic-indicator">
+                <i class="fa-solid fa-microphone"></i>
+              </div>
+              <div>
+                <div style="font-size: 0.78rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;" data-i18n="recording_duration_label">Recording Duration</div>
+                <div class="recorder-timer" id="reading-record-timer">00:00</div>
+              </div>
+            </div>
+
+            <!-- Audio Replay Player (Appears after recording) -->
+            <div id="reading-audio-player-box" style="display: none; align-items: center; gap: 10px;">
+              <audio id="reading-audio-playback" controls style="height: 38px;"></audio>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <button class="btn btn-primary btn-lg" id="btn-reading-record-toggle">
+                <i class="fa-solid fa-microphone"></i> <span data-i18n="btn_start_recording">Start Recording</span>
+              </button>
+              <button class="btn btn-accent btn-lg" id="btn-reading-submit" disabled>
+                <i class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n="btn_submit_analysis">Submit for Analysis</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+
+      <!-- =====================================================================
+           SCREEN: TONGUE TWISTER PRACTICE
+           ===================================================================== -->
+      <section class="app-screen-view" id="screen-tongue-twister" style="display: none;">
+        <div class="reading-screen-wrapper">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <button class="btn btn-secondary btn-sm" data-route="dashboard">
+              <i class="fa-solid fa-arrow-left"></i> <span data-i18n="btn_back_dashboard">Back to Dashboard</span>
+            </button>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <button class="btn btn-secondary btn-sm" id="btn-next-twister" title="Cycle to next tongue twister">
+                <i class="fa-solid fa-shuffle"></i> <span>Next Tongue Twister</span>
+              </button>
+              <button class="btn btn-secondary btn-sm" id="btn-twister-prev" title="Previous tongue twister">
+                <i class="fa-solid fa-chevron-left"></i> <span>Previous</span>
+              </button>
+              <button class="btn btn-secondary btn-sm" id="btn-twister-random" title="Pick a random tongue twister">
+                <i class="fa-solid fa-dice"></i> <span>Random</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Difficulty Filter Tabs -->
+          <div class="media-difficulty-filter-bar" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; background: #FFFFFF; border: 2px solid #FFD6C0; border-radius: var(--radius-lg); padding: 14px 20px; margin: 16px 0 20px 0;">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span style="font-weight: 800; color: #3D2B24; margin-right: 4px;">
+                <i class="fa-solid fa-bolt" style="color: #E65100;"></i> <span>Select Difficulty:</span>
+              </span>
+              <button class="media-diff-btn twister-diff-btn active" data-diff="all" onclick="TongueTwisterPractice.setDifficulty('all')">
+                ALL
+              </button>
+              <button class="media-diff-btn twister-diff-btn" data-diff="easy" onclick="TongueTwisterPractice.setDifficulty('easy')">
+                EASY
+              </button>
+              <button class="media-diff-btn twister-diff-btn" data-diff="medium" onclick="TongueTwisterPractice.setDifficulty('medium')">
+                MEDIUM
+              </button>
+              <button class="media-diff-btn twister-diff-btn" data-diff="hard" onclick="TongueTwisterPractice.setDifficulty('hard')">
+                HARD
+              </button>
+            </div>
+            
+            <div style="font-size: 0.88rem; font-weight: 800; color: #D35400;" id="twister-counter-badge">
+              Twister 1 of 30
+            </div>
+          </div>
+
+          <!-- Main Tongue Twister Prompter Card -->
+          <div class="teleprompter-card" style="border: 2px solid #FFD6C0; background: linear-gradient(180deg, #FFFDFB 0%, #FFFFFF 100%);">
+            <div class="teleprompter-header" style="border-bottom: 1.5px solid #FFE3D4; padding-bottom: 14px;">
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span class="mode-tag" id="twister-item-diff-tag" style="background: #EAF5EE; color: #2E7D32; border: 1px solid #C8E6C9; font-size: 0.8rem; font-weight: 800;">
+                  EASY
+                </span>
+                <span class="mode-tag" id="twister-item-sound-tag" style="background: #FFE3D4; color: #D35400; border: 1px solid #FFD6C0; font-size: 0.8rem; font-weight: 800;">
+                  🎯 Focus: 's' vs 'sh' Sibilants
+                </span>
+                <span class="mode-tag" id="twister-item-reps-tag" style="background: #FFF9E6; color: #9A633F; border: 1px solid #FFE082; font-size: 0.8rem; font-weight: 800;">
+                  🔁 Target: 3 Times
+                </span>
+              </div>
+              <div style="text-align: right;">
+                <span style="font-size: 0.85rem; font-weight: 800; color: #D35400;" id="twister-item-count-badge">6 words</span>
+              </div>
+            </div>
+
+            <!-- Title -->
+            <h2 style="color: #3D2B24; font-size: 1.6rem; font-weight: 900; margin: 16px 0 10px 0;" id="twister-item-title">
+              Seashells on the Shore
+            </h2>
+
+            <!-- Large Prompter Text -->
+            <div class="reading-passage-text" id="twister-text-body" style="font-size: 1.85rem; font-weight: 800; color: #2C1810; line-height: 1.5; padding: 24px 20px; background: #FFFBF8; border-radius: var(--radius-md); border-left: 5px solid #E65100; margin: 10px 0 18px 0; text-align: center;">
+              “She sells seashells by the seashore.”
+            </div>
+
+            <!-- Articulation Tip Box -->
+            <div id="twister-item-tip" style="font-size: 0.95rem; color: #6D4C41; background: #FFF6F0; border: 1.5px solid #FFD6C0; padding: 12px 18px; border-radius: var(--radius-sm); margin-bottom: 18px;">
+              <strong>💡 Articulation Tip:</strong> Keep tongue tip light against the palate when switching between 's' and 'sh'.
+            </div>
+
+            <!-- Live Transcript Bubble -->
+            <div id="twister-live-transcript" style="font-size: 0.96rem; color: #D35400; min-height: 26px; font-style: italic; text-align: center; margin-bottom: 8px;"></div>
+
+            <!-- Real-Time Waveform Canvas -->
+            <canvas class="waveform-canvas" id="twister-waveform-canvas" width="800" height="75" style="background: #FFFDFB; border: 1.5px solid #FFD6C0; border-radius: var(--radius-md); width: 100%; display: block;"></canvas>
+          </div>
+
+          <!-- Recorder Control Bar -->
+          <div class="recorder-control-bar" style="border: 2px solid #FFD6C0;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+              <div class="mic-pulse-indicator" id="twister-mic-indicator" style="background: #FFE3D4; color: #D35400;">
+                <i class="fa-solid fa-microphone"></i>
+              </div>
+              <div>
+                <div style="font-size: 0.78rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Recording Duration</div>
+                <div class="recorder-timer" id="twister-record-timer">00:00</div>
+              </div>
+            </div>
+
+            <!-- Audio Replay Player (Appears after recording) -->
+            <div id="twister-audio-player-box" style="display: none; align-items: center; gap: 10px;">
+              <span style="font-weight: 800; font-size: 0.85rem; color: #D35400;"><i class="fa-solid fa-play"></i> Preview:</span>
+              <audio id="twister-audio-playback" controls style="height: 38px;"></audio>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <button class="btn btn-secondary btn-lg" id="btn-twister-try-again" style="display: none;" title="Try this tongue twister again">
+                <i class="fa-solid fa-rotate-left"></i> <span>Try Again</span>
+              </button>
+
+              <button class="btn btn-primary btn-lg" id="btn-twister-record-toggle" style="background: #E65100; border: 1.5px solid #BF360C; min-width: 180px;">
+                <i class="fa-solid fa-microphone"></i> <span>Start Recording</span>
+              </button>
+
+              <button class="btn btn-accent btn-lg" id="btn-twister-submit" disabled style="min-width: 200px;">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> <span>Submit for Analysis</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+
+      <!-- =====================================================================
+           SCREEN 4: IMAGE & VIDEO PRACTICE (YELLOW + WHITE THEME)
+           ===================================================================== -->
+      <section class="app-screen-view" id="screen-video" style="display: none;">
+        <div class="video-screen-wrapper">
+          
+          <!-- Top Navigation & Mode Switcher Hub -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 6px;">
+            <button class="btn btn-secondary btn-sm" data-route="dashboard">
+              <i class="fa-solid fa-arrow-left"></i> <span data-i18n="btn_back_dashboard">Back to Dashboard</span>
+            </button>
+            
+            <!-- Choice A: VIDEOS vs Choice B: IMAGES -->
+            <div class="video-image-mode-tabs">
+              <button class="video-image-tab-btn active" id="tab-btn-practice-videos" onclick="MediaPractice.switchMode('video')">
+                <i class="fa-solid fa-film"></i> <span data-i18n="choice_videos">VIDEOS</span>
+              </button>
+              <button class="video-image-tab-btn" id="tab-btn-practice-images" onclick="MediaPractice.switchMode('image')">
+                <i class="fa-solid fa-image"></i> <span data-i18n="choice_images">IMAGES</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Clean Yellow + White Header Banner -->
+          <div class="video-header-banner">
+            <div>
+              <span class="mode-tag" id="media-mode-badge" style="background: #FFE082; color: #3D2B24; font-size: 0.82rem;">
+                <i class="fa-solid fa-photo-film"></i> Practice Studio → Image & Video Mode
+              </span>
+              <h1 style="color: #3D2B24; font-size: 2.1rem; margin-top: 8px;" id="media-banner-title" data-i18n="media_title">Image & Video Speaking Practice</h1>
+              <p style="color: #725C53; font-size: 1.05rem; font-weight: 600; margin-top: 6px;" id="media-banner-desc" data-i18n="media_subtitle">
+                Watch the video carefully, then explain what you saw in your own words.
+              </p>
+            </div>
+            <div style="text-align: right; background: #FFFFFF; border: 2px solid #FFE082; padding: 14px 22px; border-radius: var(--radius-lg); flex-shrink: 0; box-shadow: var(--shadow-sm);">
+              <div style="font-size: 0.8rem; font-weight: 800; color: #9A633F; text-transform: uppercase;" data-i18n="media_items_label">Practice Items</div>
+              <div style="font-weight: 900; font-size: 1.15rem; color: #3D2B24;" id="media-items-count-tag" data-i18n="media_items_available">20 items available</div>
+            </div>
+          </div>
+
+          <!-- SUB-VIEW 1: MEDIA CATALOG (GRID OF CARDS) -->
+          <div id="media-catalog-view">
+            
+            <!-- Difficulty Filter Bar -->
+            <div class="media-difficulty-filter-bar" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; background: #FFFFFF; border: 2px solid #FFE5A3; border-radius: var(--radius-lg); padding: 14px 20px; margin-bottom: 24px;">
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span style="font-weight: 800; color: #3D2B24; margin-right: 4px;">
+                  <i class="fa-solid fa-bolt" style="color: #FFC83D;"></i> <span data-i18n="media_filter_diff">Select Difficulty:</span>
+                </span>
+                <button class="media-diff-btn active" id="diff-filter-all" onclick="MediaPractice.setDifficulty('all')" data-i18n="diff_all">
+                  ALL
+                </button>
+                <button class="media-diff-btn" id="diff-filter-easy" onclick="MediaPractice.setDifficulty('easy')" data-i18n="diff_easy">
+                  EASY
+                </button>
+                <button class="media-diff-btn" id="diff-filter-medium" onclick="MediaPractice.setDifficulty('medium')" data-i18n="diff_medium">
+                  MEDIUM
+                </button>
+                <button class="media-diff-btn" id="diff-filter-hard" onclick="MediaPractice.setDifficulty('hard')" data-i18n="diff_hard">
+                  HARD
+                </button>
+              </div>
+              
+              <div style="font-size: 0.88rem; font-weight: 800; color: #9A633F;" id="media-catalog-count-badge">
+                Showing 20 items
+              </div>
+            </div>
+
+            <!-- Cards Grid -->
+            <div id="media-cards-grid" class="media-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+              <!-- Dynamic items injected via MediaPractice.renderGrid() -->
+            </div>
+          </div>
+
+          <!-- SUB-VIEW 2: DEDICATED PRACTICE STUDIO -->
+          <div id="media-practice-studio-view" style="display: none;">
+            
+            <!-- Studio Navigation Bar -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+              <button class="btn btn-secondary btn-sm" onclick="MediaPractice.backToCatalog()" style="font-weight: 800; background: #FFFFFF; border: 1.5px solid #FFE082; color: #3D2B24;">
+                <i class="fa-solid fa-arrow-left"></i> <span data-i18n="back_to_catalog">Back to Image & Video List</span>
+              </button>
+              
+              <div id="media-studio-counter-badge" style="font-size: 0.9rem; font-weight: 800; color: #9A633F; background: #FFF9E6; border: 1.5px solid #FFE082; padding: 6px 16px; border-radius: var(--radius-pill);">
+                Item 1 of 20
+              </div>
+            </div>
+
+            <!-- Main Interactive Practice Viewer -->
+            <div class="media-practice-viewer" id="media-practice-viewer-card">
+              
+              <!-- Item Title & Metadata Bar -->
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 1.5px solid #FFF0B8; padding-bottom: 14px;">
+                <div>
+                  <span class="mode-tag" id="media-item-diff-tag" style="background: #EAF5EE; color: #2E7D32; border: 1px solid #C8E6C9; font-size: 0.8rem; font-weight: 800;">
+                    Easy
+                  </span>
+                  <span class="mode-tag" id="media-item-duration-tag" style="background: #FFF9E6; color: #9A633F; border: 1px solid #FFE082; font-size: 0.8rem; font-weight: 800; margin-left: 6px;">
+                    3 min
+                  </span>
+                  <h2 style="font-size: 1.7rem; font-weight: 900; color: #3D2B24; margin-top: 6px;" id="media-item-title">
+                    For the Birds
+                  </h2>
+                </div>
+              </div>
+
+              <!-- Media Visual Player / Image Container -->
+              <div>
+                <!-- 1. Video Container (Active in Video Mode) -->
+                <div id="media-video-display-container">
+                  <div class="video-player-container" style="position: relative; width: 100%; aspect-ratio: 16 / 9; background: #1F1713; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 16px rgba(61,43,36,0.12);">
+                    <iframe id="media-video-iframe" src="about:blank" title="FLUENCY Practice Video Player" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe>
+                  </div>
+                </div>
+
+                <!-- 2. Image Container (Active in Image Mode) -->
+                <div id="media-image-display-container" style="display: none;">
+                  <div class="media-image-box">
+                    <img id="media-image-display" src="" alt="Speaking Practice Scene" loading="lazy" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Observation Prompt & Speaking Clue Card -->
+              <div class="studio-prompt-card" style="margin: 0;">
+                <div style="font-size: 0.82rem; font-weight: 800; color: #9A633F; text-transform: uppercase;">
+                  <i class="fa-solid fa-lightbulb" style="color: #FFC83D;"></i> <span data-i18n="speaking_clue_label">Speaking Clue & Prompt:</span>
+                </div>
+                <div style="font-size: 1.35rem; font-weight: 900; color: #3D2B24; margin: 6px 0 10px 0;" id="media-item-clue">
+                  "What happens between the birds?"
+                </div>
+                <p style="color: #725C53; font-size: 0.96rem; margin-bottom: 12px;" id="media-item-instruction" data-i18n="video_instruction">
+                  Watch the video carefully, then explain what you saw in your own words.
+                </p>
+
+                <!-- Guiding Questions -->
+                <div style="border-top: 1px solid #FFE5A3; padding-top: 12px;">
+                  <div style="font-size: 0.82rem; font-weight: 800; color: #725C53; text-transform: uppercase; margin-bottom: 6px;">
+                    <i class="fa-solid fa-compass" style="color: #FFC83D;"></i> <span data-i18n="guiding_thoughts_label">Guiding Thoughts for Spontaneous Speech:</span>
+                  </div>
+                  <ul id="media-guiding-questions" style="list-style: none; padding: 0; color: #3D2B24; font-size: 0.94rem; display: flex; flex-direction: column; gap: 4px;">
+                    <!-- Injected via JS -->
+                  </ul>
+                </div>
+
+                <!-- Keywords Cloud -->
+                <div style="border-top: 1px solid #FFE5A3; padding-top: 12px; margin-top: 10px;">
+                  <div style="font-size: 0.8rem; font-weight: 800; color: #9A633F; text-transform: uppercase; margin-bottom: 6px;">
+                    <i class="fa-solid fa-tags"></i> <span data-i18n="vocabulary_label">Helpful Story Vocabulary:</span>
+                  </div>
+                  <div id="media-keywords-cloud" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    <!-- Injected via JS -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- Waveform Canvas & Live Transcript -->
+              <div>
+                <canvas class="waveform-canvas" id="media-waveform-canvas" width="800" height="65" style="background: #FFFDF9; border: 1.5px solid #FFE5A3; border-radius: var(--radius-md); width: 100%; display: block;"></canvas>
+                <div id="media-live-transcript" style="font-size: 0.95rem; color: #3D2B24; min-height: 26px; text-align: center; margin: 10px 0 4px 0; font-style: italic;"></div>
+              </div>
+
+              <!-- Integrated Recorder & Navigation Action Bar -->
+              <div style="background: #FFFDF5; border: 1.5px solid #FFE082; border-radius: var(--radius-lg); padding: 20px; text-align: center;">
+                <div style="font-size: 2.2rem; font-weight: 900; color: #3D2B24; font-variant-numeric: tabular-nums; margin-bottom: 4px;" id="media-record-timer">
+                  00:00
+                </div>
+                <div id="media-record-status-label" style="font-size: 0.88rem; font-weight: 700; color: #9A633F; margin-bottom: 16px;">
+                  Click Start Recording when you're ready to speak.
+                </div>
+
+                <!-- Buttons Row -->
+                <div style="display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap;">
+                  <button class="btn btn-secondary btn-lg" id="btn-media-prev" onclick="MediaPractice.prevItem()">
+                    <i class="fa-solid fa-chevron-left"></i> <span data-i18n="btn_previous">Previous</span>
+                  </button>
+
+                  <button class="btn btn-primary btn-lg" id="btn-media-record-toggle" onclick="MediaPractice.toggleRecording()" style="background: #FFC83D; color: #3D2B24; font-weight: 900; min-width: 200px; border: 2px solid #E5A81A;">
+                    <i class="fa-solid fa-microphone"></i> <span data-i18n="btn_start_recording">Start Recording</span>
+                  </button>
+
+                  <button class="btn btn-accent btn-lg" id="btn-media-submit" onclick="MediaPractice.submitAnalysis()" disabled style="min-width: 200px;">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n="btn_submit_analyze">Submit / Analyze</span>
+                  </button>
+
+                  <button class="btn btn-secondary btn-lg" id="btn-media-next" onclick="MediaPractice.nextItem()">
+                    <span data-i18n="btn_next">Next</span> <i class="fa-solid fa-chevron-right"></i>
+                  </button>
+                </div>
+
+                <!-- Preserved Audio Playback Bar -->
+                <div id="media-audio-player-box" style="display: none; justify-content: center; align-items: center; gap: 12px; margin-top: 18px; background: #FFFFFF; padding: 10px 22px; border-radius: var(--radius-pill); border: 1.5px solid #FFE082; width: fit-content; margin-left: auto; margin-right: auto; box-shadow: var(--shadow-sm);">
+                  <span style="font-weight: 800; font-size: 0.88rem; color: #9A633F;"><i class="fa-solid fa-play"></i> <span data-i18n="play_recording_label">Play Recording:</span></span>
+                  <audio id="media-audio-playback" controls style="height: 36px;"></audio>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Set Completion Card (Shown when reaching end of items) -->
+            <div class="fluency-card" id="media-completion-card" style="display: none; background: linear-gradient(135deg, #FFFDF5 0%, #FFFFFF 100%); border: 2px solid #FFC83D; text-align: center; padding: 48px 32px; border-radius: var(--radius-xl); box-shadow: var(--shadow-card);">
+              <div style="font-size: 48px; margin-bottom: 14px;">🎉</div>
+              <h2 style="color: #3D2B24; font-size: 2.1rem; font-weight: 900;" data-i18n="completed_set_title">You've completed this set!</h2>
+              <p style="color: #725C53; font-size: 1.05rem; max-width: 540px; margin: 10px auto 24px auto;" data-i18n="completed_set_desc">
+                Great job practicing spontaneous storytelling and natural speaking cadence. Keep your speaking momentum going!
+              </p>
+              <div style="display: flex; justify-content: center; gap: 14px; flex-wrap: wrap;">
+                <button class="btn btn-primary btn-lg" onclick="MediaPractice.restartSet()" style="background: #FFC83D; color: #3D2B24; border: 2px solid #E5A81A; font-weight: 900;">
+                  <i class="fa-solid fa-rotate-left"></i> <span data-i18n="btn_practice_again">Practice Again</span>
+                </button>
+                <button class="btn btn-secondary btn-lg" onclick="MediaPractice.backToCatalog()">
+                  <i class="fa-solid fa-list"></i> <span data-i18n="back_to_catalog">Back to Image & Video List</span>
+                </button>
+                <button class="btn btn-ghost btn-lg" data-route="dashboard">
+                  <i class="fa-solid fa-house"></i> <span data-i18n="btn_back_dashboard">Back to Dashboard</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+
+      <!-- =====================================================================
+           SCREEN: VIDEOS ON THERAPY (20 REAL CLINICAL & EDUCATIONAL RESOURCES)
+           ===================================================================== -->
+      <section class="app-screen-view" id="screen-therapy" style="display: none;">
+        <div class="therapy-screen-wrapper">
+          
+          <!-- Top Navigation Header -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <button class="btn btn-secondary btn-sm" data-route="dashboard">
+              <i class="fa-solid fa-arrow-left"></i> <span data-i18n="btn_back_dashboard">Back to Dashboard</span>
+            </button>
+            <div class="mode-tag" style="background: var(--surface-cream); color: var(--brand-brown); border: 1.5px solid var(--brand-brown-border); font-weight: 800;">
+              <i class="fa-solid fa-shield-heart"></i> 20 Evidence-Based Resources
+            </div>
+          </div>
+
+          <!-- Header Banner -->
+          <div class="therapy-header-banner">
+            <div>
+              <span class="mode-tag" style="background: #FFE082; color: #3D2B24; font-size: 0.82rem; font-weight: 800;">
+                <i class="fa-solid fa-graduation-cap"></i> <span data-i18n="therapy_title">Videos on Therapy</span>
+              </span>
+              <h1 style="color: #3D2B24; font-size: 2.1rem; margin-top: 8px;" data-i18n="therapy_title">Videos on Therapy</h1>
+              <p style="color: #725C53; font-size: 1.05rem; font-weight: 600; margin-top: 6px; max-width: 760px;" data-i18n="therapy_subtitle">
+                Curated educational resources, therapy insights, and lived experiences from leading speech foundations.
+              </p>
+            </div>
+            <div style="text-align: right; background: #FFFFFF; border: 2px solid var(--border-subtle); padding: 14px 22px; border-radius: var(--radius-lg); flex-shrink: 0; box-shadow: var(--shadow-sm);">
+              <div style="font-size: 0.8rem; font-weight: 800; color: var(--brand-brown); text-transform: uppercase;">Curated Library</div>
+              <div style="font-weight: 900; font-size: 1.15rem; color: #3D2B24;">20 Resources</div>
+            </div>
+          </div>
+
+          <!-- Filter & Search Controls Bar -->
+          <div class="therapy-controls-bar">
+            <!-- Category Filter Pills -->
+            <div class="therapy-categories-list">
+              <button class="therapy-cat-pill active" data-category="all" data-i18n="therapy_filter_all">All Topics</button>
+              <button class="therapy-cat-pill" data-category="kids" data-i18n="therapy_filter_kids">Kids & Schools</button>
+              <button class="therapy-cat-pill" data-category="teens" data-i18n="therapy_filter_teens">Teens & Adults</button>
+              <button class="therapy-cat-pill" data-category="parents" data-i18n="therapy_filter_parents">Parents & Families</button>
+              <button class="therapy-cat-pill" data-category="techniques" data-i18n="therapy_filter_techniques">Therapy Techniques</button>
+              <button class="therapy-cat-pill" data-category="emotions" data-i18n="therapy_filter_emotions">Emotional Well-being</button>
+            </div>
+
+            <!-- Search Box & Count -->
+            <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+              <div class="therapy-search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="therapy-search-input" placeholder="Search topics, techniques..." data-i18n-ph="therapy_search_ph" />
+              </div>
+              <div id="therapy-count-badge" style="font-size: 0.88rem; font-weight: 800; color: var(--brand-brown); white-space: nowrap;">
+                Showing 20 videos
+              </div>
+            </div>
+          </div>
+
+          <!-- Video Cards Grid -->
+          <div id="therapy-cards-grid" class="therapy-cards-grid">
+            <!-- Injected dynamically via TherapyVideos.renderGrid() -->
+          </div>
+
+        </div>
+
+        <!-- Embedded Video Player Modal -->
+        <div id="therapy-player-modal" class="therapy-player-overlay" style="display: none;">
+          <div class="therapy-player-dialog">
+            <div class="therapy-player-header">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="mode-tag" style="background: var(--surface-white); color: var(--brand-brown); border: 1.5px solid var(--border-subtle); font-weight: 800;">
+                  <i class="fa-solid fa-circle-play" style="color: var(--accent-yellow-dark);"></i> FLUENCY Video Theater
+                </span>
+                <span id="therapy-player-source" style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted);"></span>
+              </div>
+              <button class="btn btn-ghost btn-sm modal-close-trigger" onclick="TherapyVideos.closePlayer()" style="font-size: 1.2rem; padding: 4px 10px;">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            <div class="therapy-player-body">
+              <!-- Video Player Embed Container -->
+              <div class="therapy-iframe-aspect" id="therapy-player-iframe-container">
+                <!-- Iframe inserted dynamically -->
+              </div>
+
+              <!-- Title & Description -->
+              <div>
+                <h2 id="therapy-player-title" style="color: var(--text-dark); font-size: 1.45rem; font-weight: 900; margin-bottom: 8px;"></h2>
+                <p id="therapy-player-desc" style="color: var(--text-muted); font-size: 0.98rem; line-height: 1.6;"></p>
+              </div>
+
+              <!-- Key Takeaways Box -->
+              <div class="therapy-takeaways-box">
+                <div style="font-size: 0.85rem; font-weight: 800; text-transform: uppercase; color: var(--brand-brown); letter-spacing: 0.04em;">
+                  <i class="fa-solid fa-bookmark" style="color: var(--accent-yellow-dark);"></i> Key Clinical & Practical Takeaways
+                </div>
+                <ul id="therapy-player-takeaways"></ul>
+              </div>
+
+              <!-- Modal Footer Controls -->
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-top: 1px solid var(--border-subtle); padding-top: 16px;">
+                <div style="display: flex; gap: 8px;">
+                  <button class="btn btn-secondary btn-sm" onclick="TherapyVideos.playPrev()">
+                    <i class="fa-solid fa-backward-step"></i> Previous
+                  </button>
+                  <button class="btn btn-secondary btn-sm" onclick="TherapyVideos.playNext()">
+                    Next <i class="fa-solid fa-forward-step"></i>
+                  </button>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                  <a id="therapy-player-external-link" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">
+                    <i class="fa-brands fa-youtube" style="color: #FF0000;"></i> Watch on YouTube
+                  </a>
+                  <button class="btn btn-primary btn-sm modal-close-trigger" onclick="TherapyVideos.closePlayer()">
+                    Close Player
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- =====================================================================
+           SCREEN 5: 1-ON-1 FACE-TO-FACE CONVERSATION (VIDEO CALL EXPERIENCE)
+           ===================================================================== -->
+      <section class="app-screen-view" id="screen-conversation" style="display: none;">
+
+        <div class="convo-screen-wrapper">
+          
+          <!-- Top Header Navigation & Call Controls -->
+          <div class="convo-call-header">
+            <button class="btn btn-secondary btn-sm" data-route="dashboard">
+              <i class="fa-solid fa-arrow-left"></i> <span data-i18n="btn_back_dashboard">Back to Dashboard</span>
+            </button>
+            
+            <div class="convo-scenario-pill-wrapper">
+              <span style="font-size: 0.82rem; font-weight: 800; color: #9A633F; text-transform: uppercase;" data-i18n="scenario_label">Scenario:</span>
+              <select class="form-select convo-scenario-select" id="convo-scenario-select">
+                <!-- Populated dynamically via JS -->
+              </select>
+            </div>
+
+            <div class="convo-call-status-badge">
+              <span class="convo-live-indicator-dot"></span>
+              <span data-i18n="convo_call_active">Call Active</span>
+              <span class="convo-timer-divider">•</span>
+              <span id="convo-session-timer" style="font-family: monospace; font-weight: 800;">00:00</span>
+            </div>
+          </div>
+
+          <!-- Main Face-to-Face Video Call Stage -->
+          <div class="convo-call-stage" id="convo-call-stage">
+            
+            <!-- Turn & Speaker Status Banner (Floating at Top of Stage) -->
+            <div class="convo-turn-banner" id="convo-turn-banner">
+              <div class="convo-turn-pill ai-speaking" id="convo-turn-pill">
+                <span class="convo-status-dot" id="convo-status-dot"></span>
+                <span id="convo-turn-text" data-i18n="convo_ai_speaking">Partner is speaking...</span>
+              </div>
+            </div>
+
+            <!-- Picture-in-Picture User Camera Mirror (Top-Right of Stage) -->
+            <div class="convo-pip-mirror" id="convo-pip-mirror">
+              <video id="convo-camera-video" autoplay playsinline muted style="display: none;"></video>
+              <div class="convo-pip-placeholder" id="convo-pip-placeholder">
+                <div id="convo-pip-avatar" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 50%; overflow: hidden;">
+                  <i class="fa-solid fa-user" style="font-size: 1.6rem; color: var(--brand-brown);"></i>
+                </div>
+                <span id="convo-pip-username-label" style="font-size: 0.72rem; font-weight: 800; color: var(--text-dark); margin-top: 3px; max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center;">You</span>
+              </div>
+              <div class="convo-pip-badge">
+                <span id="convo-pip-badge-name">You</span>
+              </div>
+            </div>
+
+            <!-- Center Stage: Large Face-to-Face Speaking Mascot -->
+            <div class="convo-mascot-stage-center">
+              
+              <!-- Voice Ripple Rings (Pulsing when AI or User speaks) -->
+              <div class="convo-voice-ripples" id="convo-voice-ripples">
+                <div class="convo-ripple r1"></div>
+                <div class="convo-ripple r2"></div>
+                <div class="convo-ripple r3"></div>
+              </div>
+
+              <!-- Central Mascot Avatar Container (Large 270px) -->
+              <div class="convo-mascot-avatar-container" id="convo-mascot-partner">
+                <!-- Injected via MascotEngine.render() in JS -->
+              </div>
+
+              <!-- Partner Name & Scenario Context Tag -->
+              <div class="convo-partner-nametag">
+                <h3 id="convo-partner-name">Sammy (Practice Buddy)</h3>
+                <p id="convo-scenario-desc">Ordering coffee at a sunny café</p>
+              </div>
+
+            </div>
+
+            <!-- Minimalist Live Subtitles / Spoken Words Bar (Captions, NOT chat bubbles) -->
+            <div class="convo-captions-container" id="convo-captions-container">
+              <div class="convo-caption-box">
+                <div class="convo-caption-speaker" id="convo-caption-speaker">
+                  <i class="fa-solid fa-volume-high"></i> <span id="convo-caption-speaker-name">Partner</span>
+                </div>
+                <div class="convo-caption-text" id="convo-caption-text">
+                  "Hello! Welcome to the café. What can I get started for you today?"
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Bottom Video Call Controls Dock -->
+          <div class="convo-call-dock">
+            
+            <!-- Left secondary control: Replay Voice -->
+            <button class="btn btn-secondary convo-dock-btn" id="btn-convo-replay" title="Replay partner's last message">
+              <i class="fa-solid fa-rotate-left"></i> <span data-i18n="btn_replay_voice">Replay Voice</span>
+            </button>
+
+            <!-- Center Primary Action: Big Prominent Microphone Speak Button -->
+            <button class="convo-mic-main-btn" id="btn-convo-mic-main" title="Click to speak">
+              <div class="convo-mic-icon-circle">
+                <i class="fa-solid fa-microphone" id="convo-mic-icon"></i>
+              </div>
+              <span id="convo-mic-label" data-i18n="btn_tap_to_speak">Tap to Speak</span>
+            </button>
+
+            <!-- Right Controls: Camera Toggle & End Call -->
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <button class="btn btn-secondary convo-dock-btn" id="btn-convo-camera-toggle" title="Toggle camera mirror">
+                <i class="fa-solid fa-video"></i> <span id="convo-cam-btn-text" data-i18n="btn_cam_on">Camera On</span>
+              </button>
+              
+              <button class="btn convo-end-call-btn" id="btn-convo-end-analyze" title="End call and view speech analysis">
+                <i class="fa-solid fa-phone-slash"></i> <span data-i18n="btn_end_call">End Call & Analyze</span>
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+
+
+      <!-- =====================================================================
+           SCREEN 6: SPEECH ANALYSIS FEEDBACK DASHBOARD
+           ===================================================================== -->
+      <section class="app-screen-view" id="screen-feedback" style="display: none;">
+        <div class="feedback-container">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <button class="btn btn-secondary btn-sm" data-route="dashboard">
+              <i class="fa-solid fa-house"></i> <span data-i18n="btn_back_dashboard">Back to Dashboard</span>
+            </button>
+            <span class="mode-tag" style="background: var(--brand-brown-light); color: var(--brand-brown); font-size: 0.85rem;">
+              <i class="fa-solid fa-chart-pie"></i> <span data-i18n="fb_report_tag">Actual Speech Analysis Report</span>
+            </span>
+          </div>
+
+          <!-- Hero Scorecard -->
+          <div class="feedback-hero-card">
+            <!-- Practice Performance Score Ring -->
+            <div class="fluency-score-ring" style="width: 140px; height: 140px; flex-shrink: 0;">
+              <div class="fluency-score-value" id="fb-score-val">88</div>
+              <div class="fluency-score-label" style="font-weight: 800; font-size: 0.75rem; text-transform: uppercase;" data-i18n="fb_score_label">Practice Score</div>
+            </div>
+
+            <div style="flex: 1; max-width: 620px;">
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span style="font-size: 0.82rem; font-weight: 800; color: var(--brand-brown); text-transform: uppercase;" data-i18n="fb_progress_label">Practice Progress</span>
+                <span id="fb-score-badge" style="font-size: 0.8rem; font-weight: 800; padding: 3px 12px; border-radius: 999px; background: #FFF4DE; color: #9A633F; border: 1.5px solid #FFE082;" data-i18n="fb_analysis_label">Speaking Analysis</span>
+              </div>
+              <h2 style="font-size: 1.75rem; margin-top: 4px; color: var(--text-dark);" id="fb-score-title">Practice Score: 88/100</h2>
+              <div id="fb-score-focus" style="margin-top: 6px; font-size: 0.95rem; font-weight: 700; color: var(--brand-brown); background: #FFF9E6; border: 1.5px solid #FFE082; padding: 8px 14px; border-radius: var(--radius-sm);">
+                Your current focus: smoother phrase starts and steady conversational rhythm.
+              </div>
+
+              <!-- 6 Measurable Speech Metrics -->
+              <div class="metrics-score-bar" style="grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-top: 16px;">
+                <!-- 1. Speaking Time -->
+                <div class="metric-pill">
+                  <div class="metric-pill-value" id="fb-time-val">18s</div>
+                  <div class="metric-pill-label" data-i18n="fb_time_label">Speaking Time</div>
+                  <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;" id="fb-time-status">Recorded duration</div>
+                </div>
+
+                <!-- 2. Words Spoken -->
+                <div class="metric-pill">
+                  <div class="metric-pill-value" id="fb-words-val">38 words</div>
+                  <div class="metric-pill-label" data-i18n="fb_words_label">Words Spoken</div>
+                  <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;" id="fb-words-status">Spoken tokens</div>
+                </div>
+
+                <!-- 3. Speaking Rate (WPM) -->
+                <div class="metric-pill">
+                  <div class="metric-pill-value" id="fb-wpm-val">128 WPM</div>
+                  <div class="metric-pill-label" data-i18n="fb_rate_label">Speaking Rate</div>
+                  <div style="font-size: 0.72rem; color: #3E885B; font-weight: 700;" id="fb-pace-status">Optimal zone</div>
+                </div>
+
+                <!-- 4. Long Pauses -->
+                <div class="metric-pill">
+                  <div class="metric-pill-value" id="fb-pauses-val">1 pause</div>
+                  <div class="metric-pill-label" data-i18n="fb_pauses_label">Long Pauses</div>
+                  <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;" id="fb-pauses-status">Pauses > 2.0s</div>
+                </div>
+
+                <!-- 5. Repetitions -->
+                <div class="metric-pill">
+                  <div class="metric-pill-value" id="fb-repetitions-val">0</div>
+                  <div class="metric-pill-label" data-i18n="fb_reps_label">Repetitions</div>
+                  <div style="font-size: 0.72rem; color: #3E885B; font-weight: 700;" id="fb-repetitions-status">Phrase restarts</div>
+                </div>
+
+                <!-- 6. Filler Words -->
+                <div class="metric-pill">
+                  <div class="metric-pill-value" id="fb-fillers-val">1 filler</div>
+                  <div class="metric-pill-label" data-i18n="fb_fillers_label">Filler Words</div>
+                  <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;" id="fb-fillers-status">'um', 'like', etc.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mascot Companion -->
+            <div style="text-align: center; flex-shrink: 0;">
+              <div id="fb-mascot-avatar">
+                <!-- Mascot SVG -->
+              </div>
+              <div style="font-weight: 800; font-size: 0.9rem; color: var(--brand-brown); margin-top: 6px;" id="fb-mascot-encouragement">
+                Solid speaking rep!
+              </div>
+            </div>
+          </div>
+
+          <!-- Transcript Review -->
+          <div class="fluency-card" style="padding: 20px 26px;">
+            <h4 style="margin-bottom: 8px; color: var(--text-dark); display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-quote-left" style="color: var(--brand-brown);"></i> <span data-i18n="fb_transcript_title">Recorded Speech Transcript</span>
+            </h4>
+            <div id="fb-transcript-review" style="font-size: 1.05rem; color: #3D2B24; line-height: 1.6; font-style: italic; background: var(--bg-warm-cream); padding: 14px 18px; border-radius: var(--radius-md); border-left: 4px solid var(--accent-yellow);">
+              "Transcript will appear here."
+            </div>
+          </div>
+
+          <!-- Reading Mode: Paragraph Accuracy & Speech Matching Card -->
+          <div class="fluency-card" id="fb-paragraph-match-card" style="display: none; padding: 22px 26px; border: 2px solid #FFE082; background: #FFFDF9;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 14px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: #FFF0B8; color: #835232; font-size: 1.1rem;">
+                  <i class="fa-solid fa-bullseye"></i>
+                </span>
+                <div>
+                  <h3 style="color: var(--text-dark); margin: 0; font-size: 1.25rem;" data-i18n="fb_reading_match_title">Paragraph Accuracy & Speech Matching</h3>
+                  <div style="font-size: 0.84rem; color: var(--text-muted); margin-top: 2px;" data-i18n="fb_reading_match_subtitle">Comparison between the expected reading paragraph and your actual spoken words</div>
+                </div>
+              </div>
+              <div id="fb-paragraph-match-badge" style="font-size: 0.95rem; font-weight: 800; padding: 5px 16px; border-radius: 999px; background: #EAF5EE; color: #2E7D32; border: 1.5px solid #C8E6C9;">
+                Match: 100%
+              </div>
+            </div>
+
+            <!-- Mini stats row -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 14px;">
+              <div style="background: #FFFFFF; border: 1.5px solid #EAE0D5; border-radius: var(--radius-sm); padding: 10px; text-align: center;">
+                <div style="font-size: 1.25rem; font-weight: 800; color: #3D2B24;" id="fb-match-total-expected">0</div>
+                <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;" data-i18n="fb_match_expected">Expected Words</div>
+              </div>
+              <div style="background: #FFFFFF; border: 1.5px solid #C8E6C9; border-radius: var(--radius-sm); padding: 10px; text-align: center;">
+                <div style="font-size: 1.25rem; font-weight: 800; color: #2E7D32;" id="fb-match-total-matched">0</div>
+                <div style="font-size: 0.72rem; font-weight: 700; color: #2E7D32; text-transform: uppercase;" data-i18n="fb_match_matched">Matched Words</div>
+              </div>
+              <div style="background: #FFFFFF; border: 1.5px solid #FFCDD2; border-radius: var(--radius-sm); padding: 10px; text-align: center;">
+                <div style="font-size: 1.25rem; font-weight: 800; color: #C0392B;" id="fb-match-total-missing">0</div>
+                <div style="font-size: 0.72rem; font-weight: 700; color: #C0392B; text-transform: uppercase;" data-i18n="fb_match_missing">Missing / Skipped</div>
+              </div>
+              <div style="background: #FFFFFF; border: 1.5px solid #FFE082; border-radius: var(--radius-sm); padding: 10px; text-align: center;">
+                <div style="font-size: 1.25rem; font-weight: 800; color: #D35400;" id="fb-match-total-extra">0</div>
+                <div style="font-size: 0.72rem; font-weight: 700; color: #D35400; text-transform: uppercase;" data-i18n="fb_match_extra">Extra / Unrelated</div>
+              </div>
+              <div style="background: #FFFFFF; border: 1.5px solid #D1C4E9; border-radius: var(--radius-sm); padding: 10px; text-align: center;">
+                <div style="font-size: 1.25rem; font-weight: 800; color: #6A1B9A;" id="fb-match-total-replaced">0</div>
+                <div style="font-size: 0.72rem; font-weight: 700; color: #6A1B9A; text-transform: uppercase;" data-i18n="fb_match_replaced">Mismatched Words</div>
+              </div>
+            </div>
+
+            <!-- Summary Text -->
+            <div id="fb-paragraph-match-summary" style="font-size: 0.95rem; font-weight: 600; color: #3D2B24; margin-bottom: 12px; padding: 10px 14px; background: #FFFFFF; border-radius: var(--radius-sm); border-left: 4px solid #FFE082;">
+              Summary of paragraph matching
+            </div>
+
+            <!-- Detailed Breakdown Chips -->
+            <div id="fb-paragraph-match-details" style="display: flex; flex-direction: column; gap: 8px;">
+              <!-- Dynamic chips injected in JS -->
+            </div>
+          </div>
+
+          <!-- "Pattern I Noticed" Card -->
+          <div class="fluency-card" style="background: linear-gradient(135deg, #FFFDF8 0%, #FFF9EE 100%); border: 2px solid #FFE5A3; padding: 22px 26px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+              <span style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: #FFE082; color: #7A4E10; font-size: 1.1rem;">
+                <i class="fa-solid fa-lightbulb"></i>
+              </span>
+              <h3 style="color: var(--text-dark); margin: 0; font-size: 1.25rem;" data-i18n="fb_pattern_title">Pattern I Noticed</h3>
+            </div>
+            <p id="fb-pattern-noticed" style="font-size: 1.05rem; color: #3D2B24; line-height: 1.6; margin: 0; font-weight: 600;">
+              Observing your speaking pattern from this recording...
+            </p>
+          </div>
+
+          <!-- "Your Speech Feedback" Section -->
+          <div class="fluency-card" style="padding: 24px 28px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px;">
+              <span style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: var(--brand-brown-light); color: var(--brand-brown); font-size: 1.1rem;">
+                <i class="fa-solid fa-comment-dots"></i>
+              </span>
+              <div>
+                <h3 style="color: var(--text-dark); margin: 0; font-size: 1.35rem;" data-i18n="fb_title">Your Speech Feedback</h3>
+                <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;" data-i18n="fb_subtitle">Honest, supportive observations and guidance for your next practice</div>
+              </div>
+            </div>
+
+            <!-- Two Column Feedback: What Went Reasonably Well vs What Needs Improvement -->
+            <div class="feedback-two-col">
+              <!-- What Went Reasonably Well -->
+              <div class="feedback-box well">
+                <div class="feedback-box-title" style="color: var(--status-success);">
+                  <i class="fa-solid fa-circle-check"></i> <span data-i18n="fb_well_title">What Went Reasonably Well</span>
+                </div>
+                <ul class="feedback-list" id="fb-what-went-well-list">
+                  <!-- Injected via JS -->
+                </ul>
+              </div>
+
+              <!-- What Needs Improvement -->
+              <div class="feedback-box improve">
+                <div class="feedback-box-title" style="color: var(--brand-brown);">
+                  <i class="fa-solid fa-compass-drafting"></i> <span data-i18n="fb_improve_title">What Needs Improvement</span>
+                </div>
+                <div id="fb-needs-improvement-box">
+                  <!-- Injected via JS -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Main Difficulty Location Box -->
+            <div id="fb-main-difficulty-box" style="margin-top: 18px; padding: 14px 18px; background: var(--surface-cream); border-radius: var(--radius-md); border-left: 4px solid var(--brand-brown); font-size: 0.95rem; color: var(--text-dark);">
+              <strong><span data-i18n="fb_diff_location">Where difficulty occurred:</span></strong> <span id="fb-difficulty-location-text">Smooth delivery throughout.</span>
+            </div>
+          </div>
+
+          <!-- "Words to Practise" Card (Shown if specific words flagged) -->
+          <div class="fluency-card" id="fb-difficult-words-card" style="display: none; padding: 22px 26px; border: 1.5px solid var(--brand-brown-border); background: #FFFBF5;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+              <span style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: #FDE8E4; color: #C0392B; font-size: 1.1rem;">
+                <i class="fa-solid fa-spell-check"></i>
+              </span>
+              <h3 style="color: var(--text-dark); margin: 0; font-size: 1.25rem;" data-i18n="fb_words_practice_title">Words to Practise</h3>
+            </div>
+            <div id="fb-difficult-words-content" style="font-size: 0.98rem; color: var(--text-dark); line-height: 1.6;">
+              <!-- Injected via JS -->
+            </div>
+          </div>
+
+          <!-- "Next Practice" Concrete Drills & Sentences -->
+          <div class="fluency-card" style="padding: 24px 28px; border: 2px solid #FFE082; background: #FFFDF9;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+              <span style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: #FFF0B8; color: #835232; font-size: 1.1rem;">
+                <i class="fa-solid fa-dumbbell"></i>
+              </span>
+              <div>
+                <h3 style="color: var(--text-dark); margin: 0; font-size: 1.35rem;" data-i18n="fb_next_practice_title">Next Practice</h3>
+                <p style="font-size: 0.92rem; color: var(--text-muted); margin: 2px 0 0 0;" id="fb-next-practice-instruction" data-i18n="fb_next_practice_instruction">
+                  Repeat these 2 sentences three times. First slowly at a calm, steady pace, then at your natural speaking speed:
+                </p>
+              </div>
+            </div>
+
+            <!-- Targeted Practice Sentences Container -->
+            <div id="fb-next-practice-sentences" style="display: flex; flex-direction: column; gap: 10px; margin: 16px 0 20px 0;">
+              <!-- Injected via JS with interactive repeat counts -->
+            </div>
+
+            <div class="drills-grid" id="fb-actionable-drills-grid">
+              <!-- Injected via JS -->
+            </div>
+          </div>
+
+          <!-- Next Practice Continuation Banner -->
+          <div class="fluency-card" style="background: linear-gradient(135deg, #FFF4DE 0%, #FFFFFF 100%); border: 2px solid var(--brand-brown-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+            <div>
+              <div style="font-size: 0.82rem; font-weight: 800; color: var(--brand-brown); text-transform: uppercase;" data-i18n="fb_next_step_title">Next Recommended Step</div>
+              <h3 style="color: var(--text-dark); margin-top: 4px;" data-i18n="fb_continue_habit">Continue Your Speaking Habit</h3>
+              <p style="font-size: 0.92rem; color: var(--text-muted); margin-top: 4px;" id="fb-next-practice-reason">
+                Practicing short targeted sentences builds muscle memory for smooth, unhurried speech.
+              </p>
+            </div>
+            <button class="btn btn-primary btn-lg" id="btn-fb-next-practice">
+              <span data-i18n="fb_btn_next_practice">Start Next Practice</span> <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+
+          <div style="text-align: center; font-size: 0.82rem; color: var(--text-light); margin-top: 10px;" data-i18n="fb_disclaimer">
+            ⚠️ FLUENCY speech analysis provides educational acoustic and behavioral speaking feedback. It does not provide medical diagnoses for speech disorders.
+          </div>
+        </div>
+      </section>
+
+
+      <!-- =====================================================================
+           SCREEN 7: MY PROGRESS & RECORDING COMPARISON
+           ===================================================================== -->
+      <section class="app-screen-view" id="screen-progress" style="display: none;">
+        <div style="display: flex; flex-direction: column; gap: 28px;">
+          <div class="section-header">
+            <div>
+              <h2 class="section-title" data-i18n="progress_title">My Speaking Progress</h2>
+              <div class="section-subtitle" data-i18n="progress_subtitle">Longitudinal analytics, speaking pace stabilization, and recording comparisons</div>
+            </div>
+          </div>
+
+          <!-- Top Metric Counters -->
+          <div class="stats-summary-row">
+            <div class="stat-card">
+              <div class="stat-icon-wrapper stat-icon-streak"><i class="fa-solid fa-fire"></i></div>
+              <div class="stat-meta">
+                <div class="stat-label" data-i18n="stat_active_streak">Active Streak</div>
+                <div class="stat-value" id="prog-streak-val">1 Day</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon-wrapper stat-icon-time"><i class="fa-solid fa-calendar-check"></i></div>
+              <div class="stat-meta">
+                <div class="stat-label" data-i18n="stat_total_days">Total Days</div>
+                <div class="stat-value" id="prog-total-days-val">1 Day</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon-wrapper stat-icon-growth"><i class="fa-solid fa-stopwatch"></i></div>
+              <div class="stat-meta">
+                <div class="stat-label" data-i18n="stat_weekly_mins">Weekly Practice</div>
+                <div class="stat-value" id="prog-weekly-mins-val">0.0m</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon-wrapper stat-icon-sessions"><i class="fa-solid fa-microphone"></i></div>
+              <div class="stat-meta">
+                <div class="stat-label" data-i18n="stat_total_sessions">Total Sessions</div>
+                <div class="stat-value" id="prog-total-sessions-val">0</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="fluency-card" style="border-left: 5px solid var(--brand-brown);">
+            <div style="font-weight: 800; color: var(--brand-brown); font-size: 0.95rem;" data-i18n="insight_title">Overall Improvement Insight:</div>
+            <p style="color: var(--text-dark); margin-top: 4px; font-size: 1.05rem;" id="prog-improvement-summary">
+              Keep practicing regularly to build your comparative baseline.
+            </p>
+          </div>
+
+          <!-- Charts Row -->
+          <div style="display: grid; grid-template-columns: 1.3fr 0.9fr; gap: 24px;">
+            <!-- 1. Your Speaking Speed Graph -->
+            <div class="fluency-card">
+              <h3 style="margin-bottom: 6px;"><i class="fa-solid fa-gauge-high" style="color: var(--brand-brown);"></i> <span data-i18n="graph_speed_title">Your Speaking Speed</span></h3>
+              <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 14px; line-height: 1.45;" data-i18n="graph_speed_desc">
+                Speaking Speed shows approximately how many words you speak in one minute. A comfortable and clear pace is more important than speaking fast.
+              </p>
+              <div style="height: 250px; position: relative;">
+                <canvas id="chart-pace-trend"></canvas>
+              </div>
+            </div>
+
+            <!-- 2. Mode Distribution -->
+            <div class="fluency-card">
+              <h3 style="margin-bottom: 14px;"><i class="fa-solid fa-chart-pie" style="color: #7A4E4A;"></i> <span data-i18n="graph_mode_title">Mode Distribution</span></h3>
+              <div style="height: 260px; position: relative;">
+                <canvas id="chart-mode-dist"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Filler Words Used Graph -->
+          <div class="fluency-card">
+            <h3 style="margin-bottom: 6px;"><i class="fa-solid fa-chart-column" style="color: #D9A6A0;"></i> <span data-i18n="graph_fillers_title">Filler Words Used</span></h3>
+            <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 14px; line-height: 1.45;" data-i18n="graph_fillers_desc">
+              Filler words are words such as 'um', 'uh', and 'like' that may appear when you are thinking or hesitating. Tracking them helps you notice your speaking patterns over time.
+            </p>
+            <div style="height: 220px; position: relative;">
+              <canvas id="chart-fillers-trend"></canvas>
+            </div>
+          </div>
+
+          <!-- Recording Comparison Tool -->
+          <div class="fluency-card" style="border: 2px solid var(--brand-brown-border); background: #FFFDF9;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 16px;">
+              <div>
+                <h3 style="color: var(--brand-brown);"><i class="fa-solid fa-code-compare"></i> <span data-i18n="comparison_title">Side-by-Side Recording Comparison</span></h3>
+                <p style="font-size: 0.92rem; color: var(--text-muted); margin-top: 2px;" data-i18n="comparison_desc">
+                  Select two recordings to inspect mathematical differences in pace, pauses, and filler words.
+                </p>
+              </div>
+              <button class="btn btn-primary" id="btn-run-comparison">
+                <i class="fa-solid fa-magnifying-glass-chart"></i> <span data-i18n="btn_compare">Compare Recordings</span>
+              </button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+              <div class="form-group">
+                <label class="form-label" data-i18n="compare_select_a">Select Recording A (Baseline):</label>
+                <select class="form-select" id="compare-select-a"></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" data-i18n="compare_select_b">Select Recording B (Recent):</label>
+                <select class="form-select" id="compare-select-b"></select>
+              </div>
+            </div>
+
+            <div id="comparison-results-box">
+              <!-- Comparison Output Rendered Here -->
+            </div>
+          </div>
+
+          <!-- Practice History List -->
+          <div>
+            <div class="section-header">
+              <div>
+                <h3 class="section-title" style="font-size: 1.35rem;" data-i18n="history_title">Practice Session History</h3>
+                <div class="section-subtitle" data-i18n="history_subtitle">Review previous recordings and speech feedbacks</div>
+              </div>
+              <select class="form-select" id="history-filter-mode" style="width: auto; padding: 6px 14px;">
+                <option value="all">All Modes</option>
+                <option value="reading">Reading Mode</option>
+                <option value="twister">Tongue Twister</option>
+                <option value="breath">Breath & Relax</option>
+                <option value="media">Image / Video</option>
+                <option value="conversation">Conversation</option>
+              </select>
+            </div>
+
+            <div id="practice-history-list">
+              <!-- Sessions List -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- =====================================================================
+           SCREEN 8: PROFILE
+           ===================================================================== -->
+      <section class="app-screen-view" id="screen-profile" style="display: none;">
+        <div style="max-width: 800px; margin: 0 auto;">
+          <div class="section-header">
+            <div>
+              <h2 class="section-title" data-i18n="profile_title">Your Profile</h2>
+              <div class="section-subtitle" data-i18n="profile_subtitle">Manage your personal details and speaking goals</div>
+            </div>
+          </div>
+
+          <div class="fluency-card">
+            <form id="profile-form">
+              <!-- Choose Avatar Option -->
+              <div class="form-group" style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1.5px solid var(--border-subtle);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                  <div style="display: flex; align-items: center; gap: 14px;">
+                    <div id="profile-avatar-live-preview" style="width: 64px; height: 64px; border-radius: 50%; box-shadow: var(--shadow-sm); flex-shrink: 0; background: #FFF8E1; display: flex; align-items: center; justify-content: center;">
+                      <!-- Live Selected Avatar SVG -->
+                    </div>
+                    <div>
+                      <label class="form-label" style="margin-bottom: 2px; font-size: 1.05rem; font-weight: 800; color: var(--text-dark);" data-i18n="label_choose_avatar">
+                        Choose Avatar
+                      </label>
+                      <div style="font-size: 0.82rem; color: var(--text-muted);" data-i18n="label_choose_avatar_desc">Pick a friendly avatar that represents you across FLUENCY.</div>
+                    </div>
+                  </div>
+                  <span id="profile-selected-avatar-name" style="font-size: 0.88rem; font-weight: 800; color: var(--brand-brown); background: #FFF9E6; border: 1.5px solid #FFE082; padding: 5px 14px; border-radius: var(--radius-pill);">
+                    Selected: Sunny
+                  </span>
+                </div>
+                
+                <input type="hidden" id="profile-input-avatar" value="avatar-sunny" />
+                
+                <!-- Avatar Choices Grid -->
+                <div id="profile-avatars-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap: 12px; margin-top: 12px;">
+                  <!-- Dynamic Avatar items injected via ProfileSettings.renderAvatarsGrid() -->
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" data-i18n="label_fullname">Full Name</label>
+                <input type="text" class="form-input" id="profile-input-name" required />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" data-i18n="label_email">Email Address</label>
+                <input type="email" class="form-input" id="profile-input-email" disabled style="background: #FAF6F0;" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" data-i18n="label_age_group">Selected Age Group</label>
+                <select class="form-select" id="profile-input-age-group">
+                  <option value="6-11">6–11</option>
+                  <option value="12-17">12–17</option>
+                  <option value="18-23">18–23</option>
+                  <option value="24-30">24–30</option>
+                  <option value="31-40">31–40</option>
+                </select>
+                <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: block;">Personalizes Reading Mode, Image & Video Mode, and Conversation Mode.</span>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="form-group">
+                  <label class="form-label" data-i18n="label_birthdate">Birthdate (Optional)</label>
+                  <input type="date" class="form-input" id="profile-input-birthdate" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" data-i18n="label_phone">Phone Number (Optional)</label>
+                  <input type="tel" class="form-input" id="profile-input-phone" placeholder="+1 (555) 000-0000" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" data-i18n="practice_language">Interface & Practice Language</label>
+                <select class="form-select" id="profile-input-lang">
+                  <option value="English">English</option>
+                  <option value="Hindi">Hindi (हिंदी)</option>
+                  <option value="Marathi">Marathi (मराठी)</option>
+                  <option value="Spanish">Spanish (Español)</option>
+                  <option value="French">French (Français)</option>
+                  <option value="German">German (Deutsch)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" data-i18n="label_bio">Your Speaking Goals / Bio</label>
+                <textarea class="form-textarea" id="profile-input-bio" rows="3" placeholder="What are your goals? e.g., Preparing for job interviews, overcoming hesitation in meetings..."></textarea>
+              </div>
+
+              <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                <button type="submit" class="btn btn-primary btn-lg">
+                  <i class="fa-solid fa-floppy-disk"></i> <span data-i18n="save_profile">Save Profile Details</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- =====================================================================
+           SCREEN 9: SETTINGS & PERSONALIZATION
+           ===================================================================== -->
+      <section class="app-screen-view" id="screen-settings" style="display: none;">
+        <div style="max-width: 950px; margin: 0 auto; display: flex; flex-direction: column; gap: 32px;">
+          <div class="section-header">
+            <div>
+              <h2 class="section-title" data-i18n="settings_title">Personalization & Mascot</h2>
+              <div class="section-subtitle" data-i18n="settings_subtitle">Customize your companion, age filters, AI style, and themes</div>
+            </div>
+          </div>
+
+          <form id="settings-form">
+            <!-- 1. Mascot Selection (8 Mascots) -->
+            <div class="fluency-card">
+              <h3 style="margin-bottom: 6px; color: var(--text-dark);"><i class="fa-solid fa-paw" style="color: var(--brand-brown);"></i> <span data-i18n="choose_mascot">Choose Your Practice Mascot</span></h3>
+              <p style="font-size: 0.92rem; color: var(--text-muted); margin-bottom: 20px;" data-i18n="mascot_desc">
+                Your friendly companion will practice alongside you, guide breathing exercises, and celebrate milestones.
+              </p>
+              <input type="hidden" id="setting-selected-mascot" value="otter" />
+
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;" id="mascots-selection-grid">
+                <!-- 8 Mascot Cards rendered via JS -->
+              </div>
+            </div>
+
+            <!-- 2. Age Group Personalization -->
+            <div class="fluency-card" style="margin-top: 24px;">
+              <h3 style="margin-bottom: 6px; color: var(--text-dark);"><i class="fa-solid fa-user-clock" style="color: var(--brand-brown);"></i> <span data-i18n="age_personalization_title">Age Group Personalization</span></h3>
+              <p style="font-size: 0.92rem; color: var(--text-muted); margin-bottom: 20px;" data-i18n="age_personalization_desc">
+                Reading Mode, Image & Video Mode, and Conversation Mode will automatically adapt to your chosen Age Group.
+              </p>
+
+              <div class="form-group">
+                <label class="form-label" data-i18n="label_age_group">Selected Age Group</label>
+                <select class="form-select" id="setting-age-group">
+                  <option value="6-11">6–11</option>
+                  <option value="12-17">12–17</option>
+                  <option value="18-23">18–23</option>
+                  <option value="24-30">24–30</option>
+                  <option value="31-40">31–40</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 3. AI Partner & Feedback Preferences -->
+            <div class="fluency-card" style="margin-top: 24px;">
+              <h3 style="margin-bottom: 6px; color: var(--text-dark);"><i class="fa-solid fa-robot" style="color: var(--brand-brown);"></i> <span data-i18n="ai_settings_title">AI Partner & Speech Analysis Settings</span></h3>
+              
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 18px;">
+                <div class="form-group">
+                  <label class="form-label" data-i18n="label_persona">AI Conversation Persona</label>
+                  <select class="form-select" id="setting-ai-persona">
+                    <option value="supportive_alex">Alex (Supportive Colleague)</option>
+                    <option value="patient_maya">Maya (Patient Tutor)</option>
+                    <option value="energetic_leo">Leo (Friendly Barista)</option>
+                    <option value="buddy_mascot">Animated Mascot Buddy</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" data-i18n="label_tone">AI Speaking Tone</label>
+                  <select class="form-select" id="setting-ai-style">
+                    <option value="gentle">Gentle & Calming</option>
+                    <option value="conversational">Natural & Casual</option>
+                    <option value="direct">Direct & Structured</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="form-group">
+                  <label class="form-label" data-i18n="label_rigor">Feedback Rigor</label>
+                  <select class="form-select" id="setting-ai-rigor">
+                    <option value="balanced">Balanced (Honest & Constructive)</option>
+                    <option value="gentle">Gentle (Focus on Ease)</option>
+                    <option value="detailed">Detailed (In-depth Acoustic Metrics)</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" data-i18n="label_theme">Visual Theme</label>
+                  <select class="form-select" id="setting-theme">
+                    <option value="warm_cream">Warm Cream & Otter Brown (Default)</option>
+                    <option value="soft_amber">Soft Amber Sunlight</option>
+                    <option value="calm_dark">Restful Night Theme</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- 4. Language Selection in Settings -->
+              <div class="form-group" style="margin-top: 14px;">
+                <label class="form-label" data-i18n="practice_language">Interface & Practice Language</label>
+                <select class="form-select" id="setting-language">
+                  <option value="English">English</option>
+                  <option value="Hindi">Hindi (हिंदी)</option>
+                  <option value="Marathi">Marathi (मराठी)</option>
+                  <option value="Spanish">Spanish (Español)</option>
+                  <option value="French">French (Français)</option>
+                  <option value="German">German (Deutsch)</option>
+                </select>
+              </div>
+
+              <!-- External LLM API Key (Optional) -->
+              <div class="form-group" style="margin-top: 10px;">
+                <label class="form-label">External AI API Key (Optional)</label>
+                <input type="password" class="form-input" id="setting-custom-api-key" placeholder="Optional: Enter Gemini API key or OpenAI key" />
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
+                  If not provided, FLUENCY runs on its robust built-in lexical, acoustic, and heuristic analysis engine.
+                </div>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; margin-top: 24px;">
+              <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fa-solid fa-floppy-disk"></i> <span data-i18n="save_settings">Save Preferences</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+
+      <!-- =====================================================================
+           SCREEN 10: ABOUT FLUENCY
+           ===================================================================== -->
+      <section class="app-screen-view" id="screen-about" style="display: none;">
+        <div style="max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+          <div class="section-header">
+            <div>
+              <h2 class="section-title" data-i18n="nav_about">About FLUENCY</h2>
+              <div class="section-subtitle">A friendly, safe speaking-practice companion</div>
+            </div>
+          </div>
+
+          <div class="fluency-card">
+            <h3 style="color: var(--brand-brown); margin-bottom: 12px;">Our Purpose</h3>
+            <p style="font-size: 1.05rem; line-height: 1.7; margin-bottom: 16px;">
+              FLUENCY was created for people who stammer, fumble, struggle with conversational flow, or lack confidence when speaking in front of others. Traditional clinical tools often feel intimidating, like a medical diagnosis dashboard. FLUENCY reimagines speech practice as a warm, daily ritual with a friendly animal companion who never judges your pauses.
+            </p>
+
+            <h3 style="color: var(--brand-brown); margin: 24px 0 12px 0;">How the 4 Practice Modes Work</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+              <div style="background: #F5F7EE; padding: 18px; border-radius: var(--radius-md); border-left: 4px solid #4F5D3A;">
+                <h4 style="color: #34452B;">🫁 <span data-i18n="mode_breath_title">Breath & Relax</span></h4>
+                <p style="font-size: 0.88rem; margin-top: 4px;" data-i18n="mode_breath_desc">Diaphragmatic box breathing to reset vocal tension and anchor calm speech onset.</p>
+              </div>
+              <div style="background: #FBF6EF; padding: 18px; border-radius: var(--radius-md); border-left: 4px solid #6B4632;">
+                <h4 style="color: #3A2721;">📖 <span data-i18n="mode_reading_title">Reading Mode</span></h4>
+                <p style="font-size: 0.88rem; margin-top: 4px;" data-i18n="mode_reading_desc">Paced teleprompter reading to measure words-per-minute, pauses, and smooth phonation.</p>
+              </div>
+              <div style="background: #FDF4F3; padding: 18px; border-radius: var(--radius-md); border-left: 4px solid #7A4E4A;">
+                <h4 style="color: #7A4E4A;">🎬 <span data-i18n="mode_media_title">Image & Video</span></h4>
+                <p style="font-size: 0.88rem; margin-top: 4px;" data-i18n="mode_media_desc">Unscripted visual description practice to overcome impromptu speaking hesitation.</p>
+              </div>
+              <div style="background: #FFF3E6; padding: 18px; border-radius: var(--radius-md); border-left: 4px solid #C65F32;">
+                <h4 style="color: #C65F32;">💬 <span data-i18n="mode_convo_title">AI Conversation</span></h4>
+                <p style="font-size: 0.88rem; margin-top: 4px;" data-i18n="mode_convo_desc">Interactive 1-on-1 voice dialogue partner simulating real-world cafés, interviews, and standups.</p>
+              </div>
+            </div>
+
+            <h3 style="color: var(--brand-brown); margin: 24px 0 12px 0;">Privacy & Transparency</h3>
+            <p style="font-size: 0.95rem; line-height: 1.6;">
+              Your practice recordings and progress are stored privately and securely. We never expose your speech data to other users. Speech analysis is transparent, providing honest acoustic feedback without fake praise or medical claims.
+            </p>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- =====================================================================
+           SCREEN 11: REPORT A BUG
+           ===================================================================== -->
+      <section class="app-screen-view" id="screen-bug" style="display: none;">
+        <div style="max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+          <div class="section-header">
+            <div>
+              <h2 class="section-title" data-i18n="nav_bug">Report an Issue or Bug</h2>
+              <div class="section-subtitle">Help us improve the FLUENCY practice companion</div>
+            </div>
+          </div>
+
+          <div class="fluency-card">
+            <form id="bug-report-form">
+              <div class="form-group">
+                <label class="form-label">Problem Summary / Title</label>
+                <input type="text" class="form-input" id="bug-title" placeholder="e.g. Microphone didn't record on Reading Mode" required />
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="form-group">
+                  <label class="form-label">Where did it happen?</label>
+                  <select class="form-select" id="bug-page">
+                    <option value="Dashboard">Dashboard</option>
+                    <option value="Breath & Relax">Breath & Relax</option>
+                    <option value="Reading Mode">Reading Mode</option>
+                    <option value="Image & Video">Image & Video</option>
+                    <option value="Conversation">Conversation Mode</option>
+                    <option value="Progress">My Progress</option>
+                    <option value="Authentication">Login / Account</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Severity</label>
+                  <select class="form-select" id="bug-severity">
+                    <option value="Minor">Minor (Visual / Text)</option>
+                    <option value="Moderate">Moderate (Feature glitch)</option>
+                    <option value="Critical">Critical (Can't practice)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Detailed Description</label>
+                <textarea class="form-textarea" id="bug-desc" rows="4" placeholder="Please explain what happened and what you expected..." required></textarea>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Steps to Reproduce (Optional)</label>
+                <textarea class="form-textarea" id="bug-steps" rows="2" placeholder="1. Click Start Recording. 2. Pressed stop..."></textarea>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Attachment / Screenshot (Optional)</label>
+                <input type="file" class="form-input" id="bug-file" style="padding: 10px;" />
+              </div>
+
+              <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                <button type="submit" class="btn btn-primary btn-lg">
+                  <i class="fa-solid fa-paper-plane"></i> Submit Bug Report
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Previously Reported Tickets -->
+          <div>
+            <h3 style="margin-bottom: 12px; font-size: 1.2rem;">Your Reported Issues</h3>
+            <div id="user-bug-tickets-list">
+              <!-- Tickets list -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+
+<!-- =========================================================================
+     AUTHENTICATION MODAL OVERLAY
+     ========================================================================= -->
+<div class="auth-overlay" id="auth-modal-overlay">
+  <div class="auth-modal">
+    <div class="auth-brand-header">
+      <div class="auth-brand-logo">
+        🦦
+      </div>
+      <h2 class="auth-title">FLUENCY</h2>
+      <div class="auth-subtitle" data-i18n="header_tagline">“Practice your voice. Build your confidence.”</div>
+    </div>
+
+    <!-- Auth Tabs -->
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-btn-login">Login</button>
+      <button class="auth-tab" id="tab-btn-register">Create Account</button>
+    </div>
+
+    <!-- 1. Login Form -->
+    <form id="auth-login-form">
+      <div class="form-group">
+        <label class="form-label" data-i18n="label_email">Email Address</label>
+        <input type="text" class="form-input" id="login-email" placeholder="you@example.com" autocomplete="username" required />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <div class="input-with-icon">
+          <input type="password" class="form-input" id="login-password" placeholder="••••••••" required />
+          <button type="button" class="input-icon-btn btn-toggle-pwd">
+            <i class="fa-solid fa-eye"></i>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 8px;">
+        Sign In to FLUENCY
+      </button>
+
+      <div style="text-align: center; margin-top: 18px;">
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-demo-login" style="color: var(--brand-brown); font-weight: 800;">
+          <i class="fa-solid fa-wand-sparkles"></i> One-Click Demo Sign In
+        </button>
+      </div>
+    </form>
+
+    <!-- 2. Register Form -->
+    <form id="auth-register-form" style="display: none;">
+      <div class="form-group">
+        <label class="form-label" data-i18n="label_fullname">Your Name</label>
+        <input type="text" class="form-input" id="reg-name" placeholder="e.g. Alex River" required />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" data-i18n="label_email">Email Address</label>
+        <input type="email" class="form-input" id="reg-email" placeholder="you@example.com" required />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" data-i18n="label_age_group">Select Your Age Group</label>
+        <select class="form-select" id="reg-age-group" required>
+          <option value="6-11">6–11</option>
+          <option value="12-17">12–17</option>
+          <option value="18-23" selected>18–23</option>
+          <option value="24-30">24–30</option>
+          <option value="31-40">31–40</option>
+        </select>
+        <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: block;">Personalizes Reading Mode, Image & Video Mode, and Conversation topics.</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+        <div class="form-group">
+          <label class="form-label" data-i18n="label_actual_age">Exact Age (Optional)</label>
+          <input type="number" class="form-input" id="reg-actual-age" value="21" min="6" max="100" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="label_birthdate">Birthdate (Optional)</label>
+          <input type="date" class="form-input" id="reg-birthdate" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Create Password</label>
+        <div class="input-with-icon">
+          <input type="password" class="form-input" id="reg-password" placeholder="At least 6 characters" minlength="6" required />
+          <button type="button" class="input-icon-btn btn-toggle-pwd">
+            <i class="fa-solid fa-eye"></i>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 8px;">
+        Create My Practice Account
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<!-- JavaScript Modules -->
+<script src="/static/js/i18n.js"></script>
+<script src="/static/js/mascots.js"></script>
+<script src="/static/js/avatar_engine.js"></script>
+<script src="/static/js/audio_recorder.js"></script>
+<script src="/static/js/breathing.js"></script>
+<script src="/static/js/reading.js"></script>
+<script src="/static/js/tongue_twister.js"></script>
+<script src="/static/js/video_mode.js"></script>
+<script src="/static/js/therapy.js"></script>
+<script src="/static/js/conversation.js"></script>
+<script src="/static/js/progress.js"></script>
+<script src="/static/js/profile_settings.js"></script>
+<script src="/static/js/bug_report.js"></script>
+<script src="/static/js/app.js"></script>
+
+</body>
+</html>
