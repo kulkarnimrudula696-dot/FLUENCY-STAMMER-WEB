@@ -95,8 +95,6 @@ class PracticeSession(db.Model):
     
     # Speech Metrics (Real Measurable Metrics)
     wpm = db.Column(db.Float, default=0.0)
-    filler_count = db.Column(db.Integer, default=0)
-    fillers_list = db.Column(db.JSON, default=list)
     pauses_count = db.Column(db.Integer, default=0)
     repetitions_count = db.Column(db.Integer, default=0)
     clarity_score = db.Column(db.Float, default=0.0) # 0 to 100
@@ -122,8 +120,6 @@ class PracticeSession(db.Model):
             "duration_seconds": self.duration_seconds,
             "practice_age_used": self.practice_age_used,
             "wpm": round(self.wpm, 1),
-            "filler_count": self.filler_count,
-            "fillers_list": self.fillers_list or [],
             "pauses_count": self.pauses_count,
             "repetitions_count": self.repetitions_count,
             "clarity_score": round(self.clarity_score, 1),

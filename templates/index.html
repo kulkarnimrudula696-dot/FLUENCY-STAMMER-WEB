@@ -297,7 +297,7 @@
                     <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">Duration</th>
                     <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">WPM</th>
                     <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">Clarity</th>
-                    <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">Fillers / Pauses</th>
+                    <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">Pauses</th>
                     <th style="padding: 12px 14px; border-bottom: 2px solid var(--border-cream);">Recorded At</th>
                   </tr>
                 </thead>
@@ -1355,7 +1355,7 @@
                 Your current focus: smoother phrase starts and steady conversational rhythm.
               </div>
 
-              <!-- 6 Measurable Speech Metrics -->
+              <!-- 5 Measurable Speech Metrics -->
               <div class="metrics-score-bar" style="grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-top: 16px;">
                 <!-- 1. Speaking Time -->
                 <div class="metric-pill">
@@ -1390,13 +1390,6 @@
                   <div class="metric-pill-value" id="fb-repetitions-val">0</div>
                   <div class="metric-pill-label" data-i18n="fb_reps_label">Repetitions</div>
                   <div style="font-size: 0.72rem; color: #3E885B; font-weight: 700;" id="fb-repetitions-status">Phrase restarts</div>
-                </div>
-
-                <!-- 6. Filler Words -->
-                <div class="metric-pill">
-                  <div class="metric-pill-value" id="fb-fillers-val">1 filler</div>
-                  <div class="metric-pill-label" data-i18n="fb_fillers_label">Filler Words</div>
-                  <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;" id="fb-fillers-status">'um', 'like', etc.</div>
                 </div>
               </div>
             </div>
@@ -1598,6 +1591,87 @@
             </div>
           </div>
 
+          <!-- Overall Progress Section -->
+          <div class="fluency-card overall-progress-hero-card" id="overall-progress-card" style="background: linear-gradient(135deg, #FFFDF8 0%, #FFFFFF 100%); border: 2px solid #FFE082; padding: 24px 28px; border-radius: var(--radius-xl); box-shadow: var(--shadow-card);">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 24px;">
+              
+              <!-- Left Column: Title, Percentage, Linear Bar & Explanation -->
+              <div style="flex: 1; min-width: 260px;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                  <span style="font-size: 0.85rem; font-weight: 800; color: #9A633F; text-transform: uppercase; letter-spacing: 0.05em;" data-i18n="overall_progress_title">
+                    <i class="fa-solid fa-chart-line" style="color: #FFC83D; margin-right: 4px;"></i> Overall Progress
+                  </span>
+                  <span id="overall-progress-status-badge" style="font-size: 0.78rem; font-weight: 800; padding: 3px 12px; border-radius: 999px; background: #FFF0B8; color: #7A4626; border: 1px solid #FFE082;">
+                    Calculating...
+                  </span>
+                </div>
+
+                <div style="display: flex; align-items: baseline; gap: 14px; margin: 8px 0 6px 0;">
+                  <div id="overall-progress-pct-display" style="font-size: 3rem; font-weight: 900; color: #3D2B24; line-height: 1;">
+                    --
+                  </div>
+                  <div id="overall-progress-sublabel" style="font-size: 1.05rem; font-weight: 800; color: #9A633F;">
+                    Overall Speech Score
+                  </div>
+                </div>
+
+                <p id="overall-progress-explanation" style="color: #725C53; font-size: 0.95rem; margin: 6px 0 16px 0; font-weight: 500;" data-i18n="overall_progress_explanation">
+                  Based on your practice activity and speech performance.
+                </p>
+
+                <!-- Linear Progress Bar -->
+                <div style="background: #F0E6D8; border-radius: 999px; height: 12px; overflow: hidden; max-width: 520px; position: relative;">
+                  <div id="overall-progress-bar-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #FFC83D 0%, #9A633F 100%); border-radius: 999px; transition: width 0.8s ease-in-out;"></div>
+                </div>
+              </div>
+
+              <!-- Right Column: Progress Ring & 4 Pillars Breakdown -->
+              <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                <!-- Circular Progress Ring (SVG) -->
+                <div style="position: relative; width: 105px; height: 105px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                  <svg viewBox="0 0 36 36" style="width: 105px; height: 105px; transform: rotate(-90deg);">
+                    <path style="stroke: #F0E6D8; stroke-width: 3.5; fill: none;"
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path id="overall-progress-ring-circle" style="stroke: #9A633F; stroke-width: 3.5; stroke-linecap: round; fill: none; stroke-dasharray: 0, 100; transition: stroke-dasharray 0.8s ease;"
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  </svg>
+                  <div style="position: absolute; text-align: center;">
+                    <div id="overall-progress-ring-val" style="font-size: 1.35rem; font-weight: 900; color: #3D2B24; line-height: 1;">--</div>
+                    <div style="font-size: 0.65rem; font-weight: 800; color: #9A633F; text-transform: uppercase;">Score</div>
+                  </div>
+                </div>
+
+                <!-- 4 Mini Metrics Pills -->
+                <div id="overall-progress-mini-breakdown" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; min-width: 200px;">
+                  <div style="background: #FFFFFF; border: 1.5px solid #FFE082; padding: 6px 12px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 0.68rem; font-weight: 800; color: #9A633F; text-transform: uppercase;">Clarity</div>
+                    <div id="prog-breakdown-clarity" style="font-size: 0.95rem; font-weight: 900; color: #3D2B24;">--</div>
+                  </div>
+                  <div style="background: #FFFFFF; border: 1.5px solid #FFE082; padding: 6px 12px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 0.68rem; font-weight: 800; color: #9A633F; text-transform: uppercase;">Completion</div>
+                    <div id="prog-breakdown-completion" style="font-size: 0.95rem; font-weight: 900; color: #3D2B24;">--</div>
+                  </div>
+                  <div style="background: #FFFFFF; border: 1.5px solid #FFE082; padding: 6px 12px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 0.68rem; font-weight: 800; color: #9A633F; text-transform: uppercase;">Consistency</div>
+                    <div id="prog-breakdown-consistency" style="font-size: 0.95rem; font-weight: 900; color: #3D2B24;">--</div>
+                  </div>
+                  <div style="background: #FFFFFF; border: 1.5px solid #FFE082; padding: 6px 12px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 0.68rem; font-weight: 800; color: #9A633F; text-transform: uppercase;">Fluency</div>
+                    <div id="prog-breakdown-fluency" style="font-size: 0.95rem; font-weight: 900; color: #3D2B24;">--</div>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+            <!-- Insufficient Data Alert Box -->
+            <div id="overall-progress-empty-msg" style="display: none; margin-top: 14px; padding: 12px 16px; background: #FFF8E7; border-left: 4px solid #FFC83D; border-radius: 6px; font-size: 0.92rem; color: #6B4632; font-weight: 600;">
+              <i class="fa-solid fa-circle-info" style="color: #E5A81A; margin-right: 6px;"></i>
+              <span id="overall-progress-empty-text">Complete your first practice session to calculate your overall progress.</span>
+            </div>
+          </div>
+
           <!-- Top Metric Counters -->
           <div class="stats-summary-row">
             <div class="stat-card">
@@ -1659,24 +1733,13 @@
             </div>
           </div>
 
-          <!-- 3. Filler Words Used Graph -->
-          <div class="fluency-card">
-            <h3 style="margin-bottom: 6px;"><i class="fa-solid fa-chart-column" style="color: #D9A6A0;"></i> <span data-i18n="graph_fillers_title">Filler Words Used</span></h3>
-            <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 14px; line-height: 1.45;" data-i18n="graph_fillers_desc">
-              Filler words are words such as 'um', 'uh', and 'like' that may appear when you are thinking or hesitating. Tracking them helps you notice your speaking patterns over time.
-            </p>
-            <div style="height: 220px; position: relative;">
-              <canvas id="chart-fillers-trend"></canvas>
-            </div>
-          </div>
-
           <!-- Recording Comparison Tool -->
           <div class="fluency-card" style="border: 2px solid var(--brand-brown-border); background: #FFFDF9;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 16px;">
               <div>
                 <h3 style="color: var(--brand-brown);"><i class="fa-solid fa-code-compare"></i> <span data-i18n="comparison_title">Side-by-Side Recording Comparison</span></h3>
                 <p style="font-size: 0.92rem; color: var(--text-muted); margin-top: 2px;" data-i18n="comparison_desc">
-                  Select two recordings to inspect mathematical differences in pace, pauses, and filler words.
+                  Select two recordings to inspect mathematical differences in pace, pauses, and repetitions.
                 </p>
               </div>
               <button class="btn btn-primary" id="btn-run-comparison">

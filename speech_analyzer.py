@@ -15,7 +15,6 @@ Evaluates actual recorded speech and transcription:
 4. Speaking Rate (words per minute)
 5. Long Pauses (pauses >2.0s beyond natural breathing)
 6. Repetitions (repeated words, repeated syllables/sounds, restarted sentences)
-7. Filler Words (count & breakdown of 'um', 'uh', 'like', 'you know', etc.)
 """
 
 import re
@@ -29,7 +28,7 @@ import unicodedata
 logger = logging.getLogger(__name__)
 
 COMMON_FILLERS = [
-    "um", "uh", "er", "ah", "like", "you know", "actually", "basically",
+    "um", "uh", "er", "ah", "ha", "mm", "hmm", "like", "you know", "actually", "basically",
     "literally", "i mean", "sort of", "kind of", "right", "so yeah", "honestly"
 ]
 
@@ -216,30 +215,204 @@ def compare_reading_paragraph(expected_text, spoken_text):
     }
 
 
-def detect_filler_words(transcript):
-    """Detect single and multi-word filler sounds from actual transcript."""
-    detected = []
-    total_count = 0
+def detect_filler_words(transcript, prompt_text="", language="English"):
+    """
+    Intelligent Contextual Filler Word Detection.
+    Detects true filler sounds and hesitation markers without misclassifying valid grammatical usages.
+    (e.g., 'I like this' is NOT a filler, while 'I was, like, thinking' or 'um like' IS a filler).
+    Supports English, Hindi, Marathi, Spanish, French, and German.
+    """
+    transcript = (transcript or "").strip()
+    if not transcript:
+        return [], 0
+
+    norm_lang = (language or "English").lower()
     lower_text = transcript.lower()
-    words = re.findall(r"\b[\w'-]+\b", lower_text)
 
-    # Multi-word fillers first
-    for filler in COMMON_FILLERS:
-        if " " in filler:
-            matches = len(re.findall(r'\b' + re.escape(filler) + r'\b', lower_text))
-            if matches > 0:
-                detected.append({"word": filler, "count": matches, "type": "phrase"})
-                total_count += matches
+    # If the user was reading a displayed prompt paragraph, extract words that genuinely belong to the prompt
+    prompt_words = set(clean_tokens(prompt_text)) if prompt_text else set()
 
-    # Single-word fillers
-    for filler in COMMON_FILLERS:
-        if " " not in filler:
-            matches = words.count(filler)
-            if matches > 0:
-                detected.append({"word": filler, "count": matches, "type": "word"})
-                total_count += matches
+    # 1. Multi-word phrases
+    multi_phrases_map = {
+        'english': ['you know', 'i mean', 'sort of', 'kind of', 'so yeah', 'you see', 'more or less', 'as if'],
+        'hindi': ['मतलब की', 'यानी कि', 'तो मतलब', 'जैसे कि'],
+        'marathi': ['सांगायचं म्हणजे', 'म्हणजे काय', 'तसं बघायला गेलं तर'],
+        'spanish': ['o sea', 'es decir', 'por así decirlo'],
+        'french': ['du coup', 'en fait', 'genre de'],
+        'german': ['sozusagen', 'na ja', 'wie gesagt']
+    }
 
-    return detected, total_count
+    phrases_to_check = list(multi_phrases_map.get('english', []))
+    for lang_key, phrases in multi_phrases_map.items():
+        if lang_key in norm_lang or norm_lang in lang_key:
+            for p in phrases:
+                if p not in phrases_to_check:
+                    phrases_to_check.append(p)
+
+    detected = {}
+    total_count = 0
+
+    # Mask multi-word phrases to avoid double counting
+    masked_text = lower_text
+    for phrase in phrases_to_check:
+        if prompt_text and phrase in prompt_text.lower():
+            continue
+
+        pattern = r'\b' + re.escape(phrase) + r'\b'
+        matches = len(re.findall(pattern, masked_text))
+        if matches > 0:
+            detected[phrase] = {'word': phrase, 'count': matches, 'type': 'phrase'}
+            total_count += matches
+            masked_text = re.sub(pattern, ' ___phr___ ', masked_text)
+
+    # 2. Pure single-word fillers (always hesitation markers when spoken)
+    pure_fillers = {
+        # English
+        'um', 'uh', 'er', 'ah', 'ha', 'haha', 'haa', 'haan', 'huh', 'eh', 'aah', 'hmm', 'mm', 'mmm', 'mhm', 'umm', 'uhh', 'hmmm', 'erm', 'em', 'uhm', 'uh-huh',
+        # Hindi
+        'मतलब', 'यानी', 'उम', 'अह', 'हम्म', 'एम', 'अं', 'हा', 'हाँ',
+        # Marathi
+        'म्हणजे', 'उम', 'अं', 'हम्म', 'हा',
+        # Spanish / French / German
+        'eh', 'este', 'euh', 'bah', 'ben', 'äh', 'ähm', 'halt', 'quasi'
+    }
+
+    tokens = clean_tokens(masked_text)
+
+    # Helper to find nearest non-pure-filler tokens before/after position i
+    def get_context_tokens(pos):
+        prev_tok = ''
+        for p in range(pos - 1, -1, -1):
+            if tokens[p] not in pure_fillers and tokens[p] != '___phr___':
+                prev_tok = tokens[p]
+                break
+        next_tok = ''
+        for n in range(pos + 1, len(tokens)):
+            if tokens[n] not in pure_fillers and tokens[n] != '___phr___':
+                next_tok = tokens[n]
+                break
+        return prev_tok, next_tok
+
+    for i, tok in enumerate(tokens):
+        if tok in pure_fillers:
+            if tok in prompt_words:
+                continue
+            detected[tok] = detected.get(tok, {'word': tok, 'count': 0, 'type': 'word'})
+            detected[tok]['count'] += 1
+            total_count += 1
+
+        elif tok == 'like':
+            if 'like' in prompt_words:
+                continue
+
+            prev_meaningful, next_meaningful = get_context_tokens(i)
+            prev_immediate = tokens[i - 1] if i > 0 else ''
+            next_immediate = tokens[i + 1] if i + 1 < len(tokens) else ''
+
+            is_verb_subject = prev_meaningful in {
+                'i', 'we', 'they', 'you', 'he', 'she', 'who', 'would', 'to', 'might',
+                'could', 'should', 'do', 'did', 'does', 'dont', "don't", 'didnt', "didn't",
+                'people', 'kids', 'everyone', 'someone', 'anyone'
+            }
+
+            is_verb_object = next_meaningful in {
+                'this', 'that', 'these', 'those', 'it', 'them', 'him', 'her', 'me', 'us',
+                'to', 'a', 'an', 'the', 'my', 'your', 'his', 'our', 'their', 'reading',
+                'books', 'movies', 'music', 'food', 'playing', 'swimming', 'going',
+                'doing', 'eating', 'having', 'learning', 'speaking', 'some', 'any', 'order'
+            }
+
+            is_comparative = prev_meaningful in {
+                'look', 'looks', 'looked', 'sound', 'sounds', 'sounded', 'feel', 'feels',
+                'felt', 'seem', 'seems', 'seemed', 'taste', 'tastes', 'act', 'acts', 'smell', 'smells'
+            } or (prev_meaningful in {'is', 'was', 'are', 'were', 'been', 'just', 'more', 'much', 'something', 'anything', 'nothing'} and next_meaningful in {'a', 'an', 'the', 'this', 'that', 'me', 'him', 'her', 'them', 'us', 'home', 'water', 'fire', 'magic', 'summer', 'winter', 'rain'})
+
+            if is_verb_subject and is_verb_object:
+                # Definite transitive verb usage: "I like this", "I, um, like reading", "would like to order"
+                pass
+            elif is_comparative:
+                # Comparative preposition usage: "looks like rain", "felt like magic"
+                pass
+            elif is_verb_subject and next_meaningful and not bool(re.search(r',\s*like\s*,|,\s*like\b|\blike\s*,', lower_text)):
+                # Subject + verb without hesitation commas
+                pass
+            else:
+                is_comma_isolated = bool(re.search(r',\s*like\s*,|,\s*like\b|\blike\s*,', lower_text))
+                is_repetition = (prev_immediate == 'like' or next_immediate == 'like')
+                is_hedging = (prev_meaningful in {'was', 'is', 'were', 'am'} and next_meaningful in {'really', 'totally', 'about', 'kind', 'so', 'just', 'insane', 'crazy', 'nervous', 'surprised', 'excited', 'shocked'})
+                is_standalone_start = (i == 0 and next_meaningful in {'i', 'we', 'you', 'it', 'there', 'they', 'he', 'she', 'what', 'how'})
+                is_discourse_marker = (prev_meaningful in {'and', 'so', 'but'} and next_meaningful in {'we', 'i', 'you', 'they', 'he', 'she', 'it'})
+
+                if is_comma_isolated or is_repetition or is_hedging or is_standalone_start or is_discourse_marker or not is_verb_subject:
+                    detected['like'] = detected.get('like', {'word': 'like', 'count': 0, 'type': 'word'})
+                    detected['like']['count'] += 1
+                    total_count += 1
+
+        elif tok == 'well':
+            if 'well' in prompt_words:
+                continue
+
+            prev_meaningful, next_meaningful = get_context_tokens(i)
+            prev_immediate = tokens[i - 1] if i > 0 else ''
+            
+            is_adverb = prev_meaningful in {
+                'very', 'as', 'doing', 'did', 'done', 'feel', 'feels', 'felt', 'went',
+                'all', 'so', 'how', 'quite', 'fairly', 'pretty', 'speaks', 'spoke'
+            } or next_meaningful in {
+                'done', 'known', 'made', 'being', 'organized', 'suited', 'prepared',
+                'received', 'spoken', 'written', 'established'
+            }
+
+            if not is_adverb:
+                is_initial = (i == 0)
+                is_comma_isolated = bool(re.search(r',\s*well\b|\bwell\s*,', lower_text))
+                is_adjacent_filler = (prev_immediate in pure_fillers) or (tokens[i + 1] in pure_fillers if i + 1 < len(tokens) else False)
+                if is_initial or is_comma_isolated or is_adjacent_filler:
+                    detected['well'] = detected.get('well', {'word': 'well', 'count': 0, 'type': 'word'})
+                    detected['well']['count'] += 1
+                    total_count += 1
+
+        elif tok == 'so':
+            if 'so' in prompt_words:
+                continue
+
+            prev_meaningful, next_meaningful = get_context_tokens(i)
+            is_adverb_so = next_meaningful in {
+                'much', 'many', 'good', 'happy', 'far', 'fast', 'great', 'nice', 'bad',
+                'cool', 'big', 'small', 'long', 'short', 'tired', 'busy', 'that', 'well',
+                'clearly', 'smoothly', 'hard', 'easy'
+            } or prev_meaningful in {'and', 'or', 'but', 'if', 'why'}
+
+            if not is_adverb_so:
+                is_initial = (i == 0)
+                is_comma_isolated = bool(re.search(r',\s*so\b|\bso\s*,', lower_text))
+                is_adjacent_filler = (tokens[i - 1] in pure_fillers if i > 0 else False) or (tokens[i + 1] in pure_fillers if i + 1 < len(tokens) else False)
+                if (is_initial and is_adjacent_filler) or is_comma_isolated:
+                    detected['so'] = detected.get('so', {'word': 'so', 'count': 0, 'type': 'word'})
+                    detected['so']['count'] += 1
+                    total_count += 1
+
+        elif tok in {'actually', 'basically', 'literally', 'honestly'}:
+            if tok in prompt_words:
+                continue
+
+            prev_meaningful, next_meaningful = get_context_tokens(i)
+            prev_immediate = tokens[i - 1] if i > 0 else ''
+            next_immediate = tokens[i + 1] if i + 1 < len(tokens) else ''
+
+            is_adverb_modifier = (prev_meaningful in {'was', 'is', 'are', 'were', 'am', 'feels', 'felt', 'seems', 'seemed'} and next_meaningful in {'nervous', 'good', 'happy', 'tired', 'fine', 'true', 'happened', 'working', 'trying', 'here', 'there', 'different', 'difficult', 'easy', 'possible'})
+            
+            if not is_adverb_modifier:
+                is_initial = (i == 0)
+                is_comma_isolated = bool(re.search(r',\s*' + re.escape(tok) + r'\b|\b' + re.escape(tok) + r'\s*,', lower_text))
+                is_adjacent_filler = (prev_immediate in pure_fillers) or (next_immediate in pure_fillers)
+                if is_initial or is_comma_isolated or is_adjacent_filler:
+                    detected[tok] = detected.get(tok, {'word': tok, 'count': 0, 'type': 'word'})
+                    detected[tok]['count'] += 1
+                    total_count += 1
+
+    return list(detected.values()), total_count
+
 
 
 def detect_repetitions_and_restarts(transcript, prompt_text=""):
@@ -326,26 +499,28 @@ def extract_difficult_words(transcript, prompt_text, repetitions_list):
     return list(struggled_words)[:3]
 
 
-def analyze_speech_data(transcript, audio_duration_seconds=0, prompt_text="", user_practice_age=21, custom_api_key=None, mode="reading"):
+def analyze_speech_data(transcript, audio_duration_seconds=0, prompt_text="", user_practice_age=21, custom_api_key=None, mode="reading", language="English"):
     """
     Main entry point for speech analysis.
-    Takes transcript, actual duration in seconds, prompt text, and practice mode.
-    Performs strict sequence alignment for Reading and Tongue Twister modes.
+    Takes transcript, actual duration in seconds, prompt text, practice mode, and language.
+    Performs strict sequence alignment for Reading and Tongue Twister modes, and contextual fluency analysis for Conversation Mode.
     """
     transcript = (transcript or "").strip()
     words = clean_tokens(transcript)
     word_count = len(words)
     audio_duration_seconds = float(audio_duration_seconds or 0)
     is_twister_mode = str(mode).lower() in ['twister', 'tongue_twister', 'tongue-twister']
+    is_convo_mode = str(mode).lower() in ['conversation', 'convo', 'chat']
 
     if audio_duration_seconds <= 0 and word_count > 0:
         audio_duration_seconds = max(round(word_count / 2.1, 1), 3.0)
 
     duration_minutes = audio_duration_seconds / 60.0 if audio_duration_seconds > 0 else 0.0
 
-    # Paragraph / Tongue Twister Matching
-    has_expected_prompt = bool(prompt_text and len(clean_tokens(prompt_text)) >= 1)
+    # Paragraph / Tongue Twister Matching (only for reading & tongue twister modes)
+    has_expected_prompt = bool(prompt_text and len(clean_tokens(prompt_text)) >= 1) and not is_convo_mode
     paragraph_match_result = compare_reading_paragraph(prompt_text, transcript) if has_expected_prompt else None
+
 
     # Handle zero input / silence
     if word_count == 0:
@@ -380,9 +555,6 @@ def analyze_speech_data(transcript, audio_duration_seconds=0, prompt_text="", us
                 "repetitions": 0,
                 "repetitions_display": "0 repetitions",
                 "repetitions_list": [],
-                "filler_words": 0,
-                "filler_words_display": "0 fillers",
-                "fillers_list": [],
                 "practice_score": 0,
                 "practice_score_display": "0/100",
                 "paragraph_match_pct": 0.0,
@@ -394,7 +566,6 @@ def analyze_speech_data(transcript, audio_duration_seconds=0, prompt_text="", us
                 "wpm": 0.0,
                 "word_count": 0,
                 "duration_seconds": round(audio_duration_seconds, 1),
-                "filler_count": 0,
                 "pauses_count": 0,
                 "long_pauses_count": 0,
                 "repetitions_count": 0,
@@ -465,15 +636,12 @@ def analyze_speech_data(transcript, audio_duration_seconds=0, prompt_text="", us
         pace_status = "Very Slow / Extended Hesitations"
         pace_eval = "very_slow"
 
-    # Pauses, repetitions, fillers
+    # Pauses and repetitions
     long_pauses_count, natural_pauses_count = detect_long_pauses(transcript, audio_duration_seconds, word_count)
     long_pauses_display = f"{long_pauses_count} long pause{'s' if long_pauses_count != 1 else ''}"
 
     all_repetitions, repetition_count, repeated_words_list, syllable_stutters, restarted_phrases = detect_repetitions_and_restarts(transcript, prompt_text)
     repetitions_display = f"{repetition_count} repetition{'s' if repetition_count != 1 else ''}"
-
-    detected_fillers, filler_count = detect_filler_words(transcript)
-    filler_words_display = f"{filler_count} filler word{'s' if filler_count != 1 else ''}"
 
     # -------------------------------------------------------------------------
     # 2. PRACTICE SCORE & READING ACCURACY DEDUCTIONS
@@ -481,7 +649,6 @@ def analyze_speech_data(transcript, audio_duration_seconds=0, prompt_text="", us
     base_score = 100.0
     repetition_deduction = min(36.0, repetition_count * 12.0)
     pause_deduction = min(30.0, long_pauses_count * 10.0)
-    filler_deduction = min(24.0, filler_count * 6.0)
 
     pace_deduction = 0.0
     if pace_eval in ["fast", "very_slow"]:
@@ -492,7 +659,7 @@ def analyze_speech_data(transcript, audio_duration_seconds=0, prompt_text="", us
     trailing_off = transcript.endswith("...") or (word_count > 3 and transcript[-1] not in ".!?\"'")
     trailing_deduction = 8.0 if trailing_off else 0.0
 
-    total_deductions = repetition_deduction + pause_deduction + filler_deduction + pace_deduction + trailing_deduction
+    total_deductions = repetition_deduction + pause_deduction + pace_deduction + trailing_deduction
     fluency_score = max(15.0, min(100.0, base_score - total_deductions))
 
     # Strict score calculation for Reading Mode vs Free Speech
@@ -523,8 +690,6 @@ def analyze_speech_data(transcript, audio_duration_seconds=0, prompt_text="", us
             focus_areas.append("maintaining exact printed word order")
     if repetition_count > 0:
         focus_areas.append("smoother sentence starts without phrase restarts")
-    if filler_count > 0:
-        focus_areas.append("replacing filler sounds with brief silent pauses")
     if long_pauses_count > 0:
         focus_areas.append("linking short 3–4 word phrases smoothly")
 
@@ -563,17 +728,20 @@ def analyze_speech_data(transcript, audio_duration_seconds=0, prompt_text="", us
             pattern_noticed = f"Phoneme slip detected: you said '{rep_ex['spoken']}' instead of '{rep_ex['expected']}'."
         elif repetition_count >= 2:
             pattern_noticed = "You tended to repeat initial words when beginning new sentences."
-        elif filler_count >= 3:
-            pattern_noticed = f"You used '{detected_fillers[0]['word']}' as a bridge between phrases."
         else:
             pattern_noticed = f"You maintained a consistent reading pace with minor phrase variations."
+    elif is_convo_mode:
+        if repetition_count >= 2:
+            pattern_noticed = "You restarted phrases several times when formulating your thoughts."
+        elif long_pauses_count >= 2:
+            pattern_noticed = "You had long pauses before starting responses, holding breath pressure before the first sound."
+        elif pace_eval == "fast":
+            pattern_noticed = "Your speaking tempo was slightly rushed during conversational responses."
+        else:
+            pattern_noticed = "You maintained a natural, calm conversational rhythm throughout your turns."
     else:
-        if repetition_count >= 2 and filler_count >= 2:
-            pattern_noticed = "You tended to repeat initial words and insert filler sounds when formulating the next phrase."
-        elif repetition_count >= 2:
+        if repetition_count >= 2:
             pattern_noticed = "You tended to restart sentences and repeat initial words when beginning a new thought."
-        elif filler_count >= 3:
-            pattern_noticed = f"You used '{detected_fillers[0]['word']}' as a verbal bridge between ideas instead of allowing a brief silent pause."
         elif long_pauses_count >= 2:
             pattern_noticed = "You had longer pauses before starting sentences, holding breath pressure before the first sound."
         elif pace_eval == "fast":
@@ -656,8 +824,6 @@ def analyze_speech_data(transcript, audio_duration_seconds=0, prompt_text="", us
         what_went_well.append(f"You used {natural_pauses_count} natural breathing pauses between phrases.")
     if repetition_count == 0 and word_count >= 6:
         what_went_well.append("Phrases were initiated and completed cleanly without false starts.")
-    if filler_count == 0 and word_count >= 6:
-        what_went_well.append("You spoke without relying on verbal fillers like 'um' or 'like'.")
     if 85 <= wpm <= 155:
         what_went_well.append(f"Your speaking rate of {wpm} WPM was in an optimal conversational tempo.")
 
@@ -674,15 +840,6 @@ def analyze_speech_data(transcript, audio_duration_seconds=0, prompt_text="", us
             "how_to_fix": "Use Gentle Onset: start the first sound with a soft breath release and complete the full phrase without stopping."
         })
 
-    if filler_count > 0:
-        filler_examples = ", ".join([f"'{f['word']}' ({f['count']}x)" for f in detected_fillers[:3]])
-        what_needs_improvement.append(f"Used {filler_count} filler sound(s) ({filler_examples}). Practise brief silent pauses instead.")
-        needs_improvement_cards.append({
-            "issue": f"Filler Sounds ({filler_count}x: {filler_examples})",
-            "why_it_matters": "Filler sounds occur when keeping the voice engaged while formulating the next thought.",
-            "how_to_fix": "Practise the 1-Second Silent Pause: allow complete silence while thinking instead of filling gaps with sound."
-        })
-
     if long_pauses_count > 0:
         what_needs_improvement.append(f"Recorded {long_pauses_count} extended pause(s) (>2.0s).")
         needs_improvement_cards.append({
@@ -693,6 +850,31 @@ def analyze_speech_data(transcript, audio_duration_seconds=0, prompt_text="", us
 
     if not what_needs_improvement:
         what_needs_improvement.append("Your speech delivery is steady. Continue regular practice to maintain this confidence.")
+
+    # Localize feedback for Hindi and Marathi if selected
+    norm_lang = (language or "English").lower()
+    if norm_lang in ['hindi', 'hi']:
+        if is_convo_mode:
+            if repetition_count >= 2:
+                pattern_noticed = "बातचीत में विचार बनाते समय आपने कुछ शब्दों को दोहराया।"
+            elif long_pauses_count >= 2:
+                pattern_noticed = "वाक्य शुरू करने से पहले लंबे ठहराव (>2.0s) देखे गए।"
+            else:
+                pattern_noticed = "आपने बहुत स्वाभाविक और शांत गति में बातचीत पूरी की।"
+
+        if word_count >= 6:
+            what_went_well = [f"आपने {speaking_time_display} में {word_count} शब्दों के साथ बातचीत का अभ्यास पूरा किया।"]
+    elif norm_lang in ['marathi', 'mr']:
+        if is_convo_mode:
+            if repetition_count >= 2:
+                pattern_noticed = "संभाषणात विचार मांडताना काही शब्द पुन्हा उच्चारले गेले."
+            elif long_pauses_count >= 2:
+                pattern_noticed = "वाक्य सुरू करण्यापूर्वी जास्त वेळ थांबणे दिसून आले."
+            else:
+                pattern_noticed = "तुम्ही अतिशय शांत आणि सहज गतीने संवाद साधला."
+
+        if word_count >= 6:
+            what_went_well = [f"तुम्ही {speaking_time_display} मध्ये {word_count} शब्दांसह सराव पूर्ण केला."]
 
     # Difficult words
     difficult_words = extract_difficult_words(transcript, prompt_text, all_repetitions)
@@ -710,9 +892,6 @@ def analyze_speech_data(transcript, audio_duration_seconds=0, prompt_text="", us
     elif repetition_count > 0:
         practice_sentence_1 = "When I begin speaking, I let my voice glide forward into the whole sentence."
         practice_sentence_2 = "Each new phrase starts with a calm, gentle release of sound."
-    elif filler_count > 0:
-        practice_sentence_1 = "I pause in silent comfort before answering any question."
-        practice_sentence_2 = "Silence gives my mind space to choose the exact words I want."
     else:
         practice_sentence_1 = "Calm breathing and steady pacing make speaking feel effortless."
         practice_sentence_2 = "I express my thoughts step by step with clarity and quiet confidence."
@@ -768,9 +947,6 @@ def analyze_speech_data(transcript, audio_duration_seconds=0, prompt_text="", us
             "repetitions": repetition_count,
             "repetitions_display": repetitions_display,
             "repetitions_list": all_repetitions,
-            "filler_words": filler_count,
-            "filler_words_display": filler_words_display,
-            "fillers_list": detected_fillers,
             "practice_score": practice_score,
             "practice_score_display": practice_score_display,
             "paragraph_match_pct": paragraph_match_payload["match_percentage"],
@@ -782,7 +958,6 @@ def analyze_speech_data(transcript, audio_duration_seconds=0, prompt_text="", us
             "wpm": wpm,
             "word_count": word_count,
             "duration_seconds": round(audio_duration_seconds, 1),
-            "filler_count": filler_count,
             "pauses_count": long_pauses_count + natural_pauses_count,
             "long_pauses_count": long_pauses_count,
             "repetitions_count": repetition_count,
@@ -800,7 +975,12 @@ def analyze_speech_data(transcript, audio_duration_seconds=0, prompt_text="", us
             "what_needs_improvement": what_needs_improvement,
             "main_difficulty_location": main_difficulty_location,
             "speech_pattern_noticed": pattern_noticed,
-            "what_to_practise_next": "Practise reading the tongue twister again, starting slowly to coordinate consonant transitions before building speed." if is_twister_mode else "Practise reading the paragraph again, keeping eyes on each word and maintaining smooth pacing."
+            "what_to_practise_next": (
+                "Practise reading the tongue twister again, starting slowly to coordinate consonant transitions before building speed." if is_twister_mode else (
+                    "Practise conversational responses with a calm, steady rhythm and gentle breath pauses before speaking to organize your thoughts smoothly." if is_convo_mode else
+                    "Practise reading the paragraph again, keeping eyes on each word and maintaining smooth pacing."
+                )
+            )
         },
         "what_went_well": what_went_well,
         "needs_improvement": needs_improvement_cards,

@@ -76,7 +76,7 @@ def run_tests():
     assert reading_analyze_resp.status_code == 200
     s_id_1 = reading_analyze_resp.json["session_id"]
     metrics_1 = reading_analyze_resp.json["feedback"]["metrics"]
-    print(" -> Metrics 1: WPM =", metrics_1["wpm"], "Clarity =", metrics_1["clarity_score"], "Fillers =", metrics_1["filler_count"])
+    print(" -> Metrics 1: WPM =", metrics_1["wpm"], "Clarity =", metrics_1["clarity_score"], "Pauses =", metrics_1["pauses_count"])
 
     # 6. Test Practice Analysis for Image/Video Mode
     media_analyze_resp = client.post('/api/practice/analyze', json={

@@ -81,6 +81,95 @@ const ProgressEngine = {
     if (data.charts) {
       this.renderCharts(data.charts);
     }
+
+    // Dynamic Overall Progress Section
+    this.renderOverallProgress(data.overall_progress);
+  },
+
+  renderOverallProgress(opData) {
+    const pctDisplay = document.getElementById('overall-progress-pct-display');
+    const ringCircle = document.getElementById('overall-progress-ring-circle');
+    const ringVal = document.getElementById('overall-progress-ring-val');
+    const barFill = document.getElementById('overall-progress-bar-fill');
+    const statusBadge = document.getElementById('overall-progress-status-badge');
+    const explanationEl = document.getElementById('overall-progress-explanation');
+    const emptyBox = document.getElementById('overall-progress-empty-msg');
+    const emptyText = document.getElementById('overall-progress-empty-text');
+    const sublabel = document.getElementById('overall-progress-sublabel');
+
+    const bClarity = document.getElementById('prog-breakdown-clarity');
+    const bCompletion = document.getElementById('prog-breakdown-completion');
+    const bConsistency = document.getElementById('prog-breakdown-consistency');
+    const bFluency = document.getElementById('prog-breakdown-fluency');
+
+    if (!opData || !opData.has_data || opData.percentage === null || opData.percentage === undefined) {
+      if (pctDisplay) {
+        pctDisplay.innerText = "Not enough data yet";
+        pctDisplay.style.fontSize = "1.65rem";
+      }
+      if (sublabel) sublabel.style.display = "none";
+      if (ringVal) ringVal.innerText = "--";
+      if (ringCircle) ringCircle.setAttribute('stroke-dasharray', '0, 100');
+      if (barFill) barFill.style.width = '0%';
+      if (statusBadge) {
+        statusBadge.innerText = opData?.status_label || "Not enough data yet";
+        statusBadge.style.background = "#F5EFE6";
+        statusBadge.style.color = "#725C53";
+        statusBadge.style.borderColor = "#E0D5C1";
+      }
+      if (explanationEl) {
+        explanationEl.innerText = opData?.explanation || "Based on your practice activity and speech performance.";
+      }
+      if (emptyBox) {
+        emptyBox.style.display = "block";
+        if (emptyText && opData?.message) emptyText.innerText = opData.message;
+      }
+      if (bClarity) bClarity.innerText = "--";
+      if (bCompletion) bCompletion.innerText = "--";
+      if (bConsistency) bConsistency.innerText = "--";
+      if (bFluency) bFluency.innerText = "--";
+      return;
+    }
+
+    // Has real valid database speech data
+    const pct = Math.round(opData.percentage);
+    if (pctDisplay) {
+      pctDisplay.innerText = `${pct}%`;
+      pctDisplay.style.fontSize = "3rem";
+    }
+    if (sublabel) sublabel.style.display = "block";
+    if (ringVal) ringVal.innerText = `${pct}%`;
+    if (ringCircle) ringCircle.setAttribute('stroke-dasharray', `${pct}, 100`);
+    if (barFill) barFill.style.width = `${pct}%`;
+
+    if (statusBadge) {
+      statusBadge.innerText = opData.status_label || (pct >= 85 ? "Strong Performance" : pct >= 70 ? "Steady Progress" : "Developing Foundation");
+      if (pct >= 85) {
+        statusBadge.style.background = "#EAF5EE";
+        statusBadge.style.color = "#2E7D32";
+        statusBadge.style.borderColor = "#C8E6C9";
+      } else if (pct >= 70) {
+        statusBadge.style.background = "#FFF9E6";
+        statusBadge.style.color = "#9A633F";
+        statusBadge.style.borderColor = "#FFE082";
+      } else {
+        statusBadge.style.background = "#FFF0B8";
+        statusBadge.style.color = "#7A4626";
+        statusBadge.style.borderColor = "#FFE082";
+      }
+    }
+
+    if (explanationEl) {
+      explanationEl.innerText = opData.explanation || "Based on your practice activity and speech performance.";
+    }
+
+    if (emptyBox) emptyBox.style.display = "none";
+
+    const bk = opData.metrics_breakdown || {};
+    if (bClarity) bClarity.innerText = bk.clarity !== undefined ? `${Math.round(bk.clarity)}%` : "--";
+    if (bCompletion) bCompletion.innerText = bk.completion !== undefined ? `${Math.round(bk.completion)}%` : "--";
+    if (bConsistency) bConsistency.innerText = bk.consistency !== undefined ? `${Math.round(bk.consistency)}%` : "--";
+    if (bFluency) bFluency.innerText = bk.fluency_control !== undefined ? `${Math.round(bk.fluency_control)}%` : "--";
   },
 
   renderCharts(chartData) {
@@ -88,12 +177,10 @@ const ProgressEngine = {
 
     // Destroy existing instances to prevent canvas reuse errors
     if (this.charts.pace) this.charts.pace.destroy();
-    if (this.charts.fillers) this.charts.fillers.destroy();
     if (this.charts.modes) this.charts.modes.destroy();
 
     const dates = chartData.dates && chartData.dates.length > 0 ? chartData.dates : ['Practice 1', 'Practice 2', 'Practice 3'];
     const wpmValues = chartData.wpm && chartData.wpm.length > 0 ? chartData.wpm : [110, 125, 138];
-    const fillerValues = chartData.fillers && chartData.fillers.length > 0 ? chartData.fillers : [4, 2, 1];
 
     // 1. Your Speaking Speed Chart
     const paceCtx = document.getElementById('chart-pace-trend')?.getContext('2d');
@@ -152,49 +239,7 @@ const ProgressEngine = {
       });
     }
 
-    // 2. Filler Words Used Chart
-    const fillersCtx = document.getElementById('chart-fillers-trend')?.getContext('2d');
-    if (fillersCtx) {
-      this.charts.fillers = new Chart(fillersCtx, {
-        type: 'bar',
-        data: {
-          labels: dates,
-          datasets: [
-            {
-              label: 'Filler Words Used',
-              data: fillerValues,
-              backgroundColor: '#D9A6A0',
-              hoverBackgroundColor: '#7A4E4A',
-              borderRadius: 8
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'top' },
-            tooltip: {
-              callbacks: {
-                label: (ctx) => {
-                  const count = ctx.raw || 0;
-                  return count === 1 ? '1 filler word' : `${count} filler words`;
-                }
-              }
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: { stepSize: 1 },
-              title: { display: true, text: 'Number of filler words' }
-            }
-          }
-        }
-      });
-    }
-
-    // 3. Practice Modes Distribution Donut
+    // 2. Practice Modes Distribution Donut
     const modeCtx = document.getElementById('chart-mode-dist')?.getContext('2d');
     if (modeCtx) {
       const modeCounts = chartData.mode_distribution || { breath: 1, reading: 2, media: 1, conversation: 1, twister: 1 };
@@ -300,7 +345,7 @@ const ProgressEngine = {
                   <span style="background: ${b.bg}; color: ${b.color}; font-size: 0.72rem; font-weight: 800; padding: 2px 9px; border-radius: var(--radius-pill);">${b.label}</span>
                 </div>
                 <p style="margin: 4px 0 0 0; font-size: 0.84rem; color: var(--text-light);">
-                  ${s.date || s.created_at} · Duration: ${s.duration_seconds}s ${s.wpm > 0 ? `· <strong>${s.wpm} WPM</strong> · Fillers: ${s.filler_count}` : ''}
+                  ${s.date || s.created_at} · Duration: ${s.duration_seconds}s ${s.wpm > 0 ? `· <strong>${s.wpm} WPM</strong> · Pauses: ${s.pauses_count || 0}` : ''}
                 </p>
               </div>
             </div>
@@ -527,7 +572,6 @@ const ProgressEngine = {
             <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">Recorded on ${a.date} (${a.duration_seconds}s)</div>
             <ul style="list-style: none; font-size: 0.92rem; display: flex; flex-direction: column; gap: 6px;">
               <li><strong>Pace:</strong> ${a.wpm} WPM</li>
-              <li><strong>Filler Words:</strong> ${a.filler_count}</li>
               <li><strong>Pauses / Hesitations:</strong> ${a.pauses_count}</li>
               <li><strong>Clarity Index:</strong> ${a.clarity_score}%</li>
             </ul>
@@ -542,7 +586,6 @@ const ProgressEngine = {
             <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">Recorded on ${b.date} (${b.duration_seconds}s)</div>
             <ul style="list-style: none; font-size: 0.92rem; display: flex; flex-direction: column; gap: 6px;">
               <li><strong>Pace:</strong> ${b.wpm} WPM <span style="font-size: 0.8rem; color: ${d.wpm_diff > 0 ? '#3E885B' : '#725C53'};">(${d.wpm_diff > 0 ? '+' : ''}${d.wpm_diff} WPM)</span></li>
-              <li><strong>Filler Words:</strong> ${b.filler_count} <span style="font-size: 0.8rem; color: ${d.filler_diff <= 0 ? '#3E885B' : '#C0392B'};">(${d.filler_diff > 0 ? '+' : ''}${d.filler_diff})</span></li>
               <li><strong>Pauses / Hesitations:</strong> ${b.pauses_count} <span style="font-size: 0.8rem; color: ${d.pauses_diff <= 0 ? '#3E885B' : '#C0392B'};">(${d.pauses_diff > 0 ? '+' : ''}${d.pauses_diff})</span></li>
               <li><strong>Clarity Index:</strong> ${b.clarity_score}% <span style="font-size: 0.8rem; color: ${d.clarity_diff >= 0 ? '#3E885B' : '#C0392B'};">(${d.clarity_diff > 0 ? '+' : ''}${d.clarity_diff}%)</span></li>
             </ul>

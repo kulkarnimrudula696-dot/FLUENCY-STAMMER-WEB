@@ -683,29 +683,6 @@ function showFeedbackScreen(feedback, sessionData) {
     }
   }
 
-  // 6. Filler Words
-  const fillersEl = document.getElementById('fb-fillers-val');
-  if (fillersEl) {
-    const fCount = m.filler_words !== undefined ? m.filler_words : (m.filler_count || 0);
-    fillersEl.innerText = m.filler_words_display || `${fCount} filler${fCount === 1 ? '' : 's'}`;
-  }
-  const fillersStatusEl = document.getElementById('fb-fillers-status');
-  if (fillersStatusEl) {
-    const fCount = m.filler_words !== undefined ? m.filler_words : (m.filler_count || 0);
-    if (fCount === 0) {
-      fillersStatusEl.innerText = "Zero detected";
-      fillersStatusEl.style.color = "#3E885B";
-    } else {
-      const flist = m.fillers_list || [];
-      if (flist.length > 0) {
-        fillersStatusEl.innerText = flist.map(f => typeof f === 'object' ? `${f.word} (${f.count}x)` : f).slice(0, 2).join(', ');
-      } else {
-        fillersStatusEl.innerText = `${fCount} in session`;
-      }
-      fillersStatusEl.style.color = "var(--text-muted)";
-    }
-  }
-
   // Mascot celebratory state & encouragement
   const mascot = AppState.user ? AppState.user.selected_mascot : 'otter';
   const mascotState = score >= 75 ? 'smiling' : (score >= 45 ? 'listening' : 'waving');
@@ -1066,7 +1043,7 @@ const AdminController = {
               <td style="padding: 12px 14px; font-weight: 700;">${s.duration_seconds}s</td>
               <td style="padding: 12px 14px; font-weight: 700; color: var(--brand-brown);">${s.wpm}</td>
               <td style="padding: 12px 14px; font-weight: 800; color: #059669;">${s.clarity_score}%</td>
-              <td style="padding: 12px 14px; color: var(--text-muted); font-size: 0.82rem;">${s.filler_count} fillers / ${s.pauses_count} pauses</td>
+              <td style="padding: 12px 14px; color: var(--text-muted); font-size: 0.82rem;">${s.pauses_count} pauses</td>
               <td style="padding: 12px 14px; color: var(--text-muted); font-size: 0.82rem;">${safeStr(s.created_at || s.date || '-')}</td>
             </tr>
           `;

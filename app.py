@@ -90,8 +90,6 @@ with app.app_context():
                 duration_seconds=26,
                 practice_age_used=21,
                 wpm=111.0,
-                filler_count=3,
-                fillers_list=[{"word": "um", "count": 2, "type": "word"}, {"word": "like", "count": 1, "type": "word"}],
                 pauses_count=5,
                 repetitions_count=2,
                 clarity_score=78.5,
@@ -109,8 +107,6 @@ with app.app_context():
                 duration_seconds=22,
                 practice_age_used=21,
                 wpm=131.0,
-                filler_count=1,
-                fillers_list=[{"word": "um", "count": 1, "type": "word"}],
                 pauses_count=3,
                 repetitions_count=0,
                 clarity_score=91.0,
@@ -128,7 +124,6 @@ with app.app_context():
                 duration_seconds=180,
                 practice_age_used=21,
                 wpm=0.0,
-                filler_count=0,
                 pauses_count=0,
                 repetitions_count=0,
                 clarity_score=100.0,
@@ -567,11 +562,13 @@ def get_scenarios():
         target_age = int(request.args.get('age', user.practice_age if user else 21))
         age_group = content_data.get_age_group_id(target_age)
 
-    items = content_data.CONVERSATION_SCENARIOS
-    filtered = [i for i in items if i['age_min'] <= target_age]
-    if not filtered:
+    language = request.args.get('language') or (user.preferred_language if user else 'English')
+    items = content_data.get_conversation_scenarios(age_group=age_group, target_age=target_age, language=language)
+    filtered = [i for i in items if i.get('age_min', 0) <= target_age]
+    if not filtered or len(filtered) < len(items):
         filtered = items
-    return jsonify({"items": filtered, "age_group": age_group})
+    return jsonify({"items": filtered, "age_group": age_group, "language": language})
+
 
 
 @app.route('/api/content/mascots', methods=['GET'])
@@ -623,6 +620,8 @@ def analyze_practice():
     prompt_text = data.get('prompt_text', '')
     audio_data_url = data.get('audio_data_url', None)
 
+    language = data.get('language') or (user.preferred_language if user else 'English')
+
     # Perform real acoustic & lexical speech analysis
     analysis_result = analyze_speech_data(
         transcript=transcript,
@@ -630,7 +629,8 @@ def analyze_practice():
         prompt_text=prompt_text,
         user_practice_age=user.practice_age,
         custom_api_key=user.custom_api_key,
-        mode=mode
+        mode=mode,
+        language=language
     )
 
     metrics = analysis_result['metrics']
@@ -642,10 +642,8 @@ def analyze_practice():
         title=title,
         duration_seconds=int(duration_seconds),
         practice_age_used=user.practice_age,
-        wpm=metrics['wpm'],
-        filler_count=metrics['filler_count'],
-        fillers_list=metrics['fillers_list'],
-        pauses_count=metrics['pauses_count'],
+        wpm=metrics.get('wpm', 0.0),
+        pauses_count=metrics.get('pauses_count', 0),
         repetitions_count=metrics['repetitions_count'],
         clarity_score=metrics['clarity_score'],
         sentence_completion_pct=metrics['sentence_completion_pct'],
@@ -661,15 +659,15 @@ def analyze_practice():
     # Update or create progress snapshot
     snapshot = UserProgressSnapshot.query.filter_by(user_id=user.id).first()
     if not snapshot:
-        snapshot = UserProgressSnapshot(user_id=user.id)
+        snapshot = UserProgressSnapshot(user_id=user.id, total_practice_minutes=0.0, total_sessions_completed=0, current_streak=0, longest_streak=0)
         db.session.add(snapshot)
 
-    snapshot.total_practice_minutes = round(snapshot.total_practice_minutes + (duration_seconds / 60.0), 1)
-    snapshot.total_sessions_completed += 1
+    snapshot.total_practice_minutes = round((snapshot.total_practice_minutes or 0.0) + (duration_seconds / 60.0), 1)
+    snapshot.total_sessions_completed = (snapshot.total_sessions_completed or 0) + 1
     today_str = datetime.datetime.utcnow().strftime("%Y-%m-%d")
     if snapshot.last_practice_date != today_str:
-        snapshot.current_streak += 1
-        if snapshot.current_streak > snapshot.longest_streak:
+        snapshot.current_streak = (snapshot.current_streak or 0) + 1
+        if snapshot.current_streak > (snapshot.longest_streak or 0):
             snapshot.longest_streak = snapshot.current_streak
         snapshot.last_practice_date = today_str
 
@@ -737,6 +735,118 @@ def get_session_audio(session_id):
     })
 
 
+def calculate_overall_progress_data(user_id, sessions, snapshot=None):
+    """
+    Calculate dynamic Overall Progress percentage (0-100) strictly from stored database records.
+    Considers clarity_score, sentence_completion_pct, consistency_score,
+    pauses, repetitions, and completed practice sessions.
+    Does NOT arbitrarily inflate percentage based on session count alone.
+    """
+    if not sessions or len(sessions) == 0:
+        return {
+            "has_data": False,
+            "percentage": None,
+            "status_label": "Not enough data yet",
+            "explanation": "Based on your practice activity and speech performance.",
+            "message": "Complete your first practice session to calculate your overall progress.",
+            "metrics_breakdown": {
+                "clarity": 0.0,
+                "completion": 0.0,
+                "consistency": 0.0,
+                "fluency_control": 0.0,
+                "practice_regularity": 0.0
+            }
+        }
+
+    # Filter sessions with valid speech practice data
+    speech_sessions = [
+        s for s in sessions 
+        if (s.wpm > 0 or s.clarity_score > 0 or s.sentence_completion_pct > 0 or (s.transcript and len(s.transcript.strip()) > 0))
+    ]
+
+    if not speech_sessions:
+        return {
+            "has_data": False,
+            "percentage": None,
+            "status_label": "Not enough data yet",
+            "explanation": "Based on your practice activity and speech performance.",
+            "message": "Complete a speaking practice session (Reading, Conversation, Tongue Twister, or Visuals) to calculate your overall progress.",
+            "metrics_breakdown": {
+                "clarity": 0.0,
+                "completion": 0.0,
+                "consistency": 0.0,
+                "fluency_control": 0.0,
+                "practice_regularity": 0.0
+            }
+        }
+
+    # 1. Articulation Clarity (Weight: 30%)
+    clarity_vals = [s.clarity_score for s in speech_sessions if s.clarity_score > 0]
+    avg_clarity = (sum(clarity_vals) / len(clarity_vals)) if clarity_vals else 75.0
+    avg_clarity = max(0.0, min(100.0, avg_clarity))
+
+    # 2. Sentence / Passage Completion (Weight: 25%)
+    completion_vals = [s.sentence_completion_pct for s in speech_sessions if s.sentence_completion_pct > 0]
+    avg_completion = (sum(completion_vals) / len(completion_vals)) if completion_vals else 80.0
+    avg_completion = max(0.0, min(100.0, avg_completion))
+
+    # 3. Speaking Consistency & Rhythm (Weight: 20%)
+    consistency_vals = [s.consistency_score for s in speech_sessions if s.consistency_score > 0]
+    avg_consistency = (sum(consistency_vals) / len(consistency_vals)) if consistency_vals else 78.0
+    avg_consistency = max(0.0, min(100.0, avg_consistency))
+
+    # 4. Fluency Disfluency Control (Weight: 15%)
+    # Evaluates controlled rate of repetitions and excessive long pauses
+    avg_reps = sum(s.repetitions_count for s in speech_sessions) / len(speech_sessions)
+    avg_pauses = sum(s.pauses_count for s in speech_sessions) / len(speech_sessions)
+
+    penalty = (avg_reps * 6.0) + (max(0.0, avg_pauses - 2.0) * 3.0)
+    fluency_control_score = max(40.0, min(100.0, 100.0 - penalty))
+
+    # 5. Practice Breadth & Regularity (Weight: 10%)
+    unique_modes = len(set(s.mode for s in sessions))
+    mode_variety_score = min(100.0, unique_modes * 25.0)
+    
+    dates = set(s.created_at.strftime("%Y-%m-%d") for s in sessions if s.created_at)
+    active_days = len(dates)
+    streak = snapshot.current_streak if snapshot else min(active_days, 7)
+    regularity_score = min(100.0, (active_days * 15.0) + (min(streak, 7) * 5.0))
+    practice_regularity_score = round((mode_variety_score * 0.4) + (regularity_score * 0.6), 1)
+
+    # Weighted Composite Score
+    composite = (
+        (avg_clarity * 0.30) +
+        (avg_completion * 0.25) +
+        (avg_consistency * 0.20) +
+        (fluency_control_score * 0.15) +
+        (practice_regularity_score * 0.10)
+    )
+    final_pct = max(10, min(100, int(round(composite))))
+
+    if final_pct >= 85:
+        status_label = "Strong Performance"
+    elif final_pct >= 70:
+        status_label = "Steady Progress"
+    elif final_pct >= 50:
+        status_label = "Developing Foundation"
+    else:
+        status_label = "Early Practice Phase"
+
+    return {
+        "has_data": True,
+        "percentage": final_pct,
+        "status_label": status_label,
+        "explanation": "Based on your practice activity and speech performance.",
+        "metrics_breakdown": {
+            "clarity": round(avg_clarity, 1),
+            "completion": round(avg_completion, 1),
+            "consistency": round(avg_consistency, 1),
+            "fluency_control": round(fluency_control_score, 1),
+            "practice_regularity": round(practice_regularity_score, 1)
+        }
+    }
+
+
 @app.route('/api/practice/progress-stats', methods=['GET'])
 def get_progress_stats():
     user = get_current_user()
@@ -780,30 +890,37 @@ def get_progress_stats():
     speech_sessions = [s for s in sessions if s.wpm > 0 and s.created_at]
     dates_timeline = [s.created_at.strftime("%b %d") for s in speech_sessions][-10:]
     wpm_trend = [round(s.wpm, 1) for s in speech_sessions][-10:]
-    filler_trend = [s.filler_count for s in speech_sessions][-10:]
     clarity_trend = [round(s.clarity_score, 1) for s in speech_sessions][-10:]
     pauses_trend = [s.pauses_count for s in speech_sessions][-10:]
 
     # Mode breakdown
-    modes_count = {"breath": 0, "reading": 0, "media": 0, "conversation": 0}
+    modes_count = {"breath": 0, "reading": 0, "media": 0, "conversation": 0, "twister": 0}
     for s in sessions:
         if s.mode in modes_count:
             modes_count[s.mode] += 1
+        elif s.mode in ["video", "image"]:
+            modes_count["media"] += 1
+        elif s.mode in ["tongue-twister", "tongue_twister"]:
+            modes_count["twister"] += 1
+
+    # Dynamic Overall Progress calculation
+    snapshot = UserProgressSnapshot.query.filter_by(user_id=user.id).first()
+    overall_progress = calculate_overall_progress_data(user.id, sessions, snapshot)
 
     # Honest Improvement Metric Calculation
     improvement_summary = "Keep practicing regularly to build comparative baseline trends."
     if len(speech_sessions) >= 2:
         early = speech_sessions[:2]
         latest = speech_sessions[-2:]
-        avg_early_fillers = sum(s.filler_count for s in early) / len(early)
-        avg_late_fillers = sum(s.filler_count for s in latest) / len(latest)
+        avg_early_pauses = sum(s.pauses_count for s in early) / len(early)
+        avg_late_pauses = sum(s.pauses_count for s in latest) / len(latest)
         avg_early_clarity = sum(s.clarity_score for s in early) / len(early)
         avg_late_clarity = sum(s.clarity_score for s in latest) / len(latest)
 
         parts = []
-        if avg_late_fillers < avg_early_fillers:
-            diff = round(avg_early_fillers - avg_late_fillers, 1)
-            parts.append(f"Reduced fillers by an average of {diff} per practice")
+        if avg_late_pauses < avg_early_pauses:
+            diff = round(avg_early_pauses - avg_late_pauses, 1)
+            parts.append(f"Reduced pauses & hesitations by an average of {diff} per practice")
         if avg_late_clarity > avg_early_clarity:
             diff_pct = round(avg_late_clarity - avg_early_clarity, 1)
             parts.append(f"+{diff_pct}% improvement in articulation clarity")
@@ -820,10 +937,10 @@ def get_progress_stats():
         "total_minutes": total_minutes,
         "total_sessions": total_sessions,
         "improvement_summary": improvement_summary,
+        "overall_progress": overall_progress,
         "charts": {
             "dates": dates_timeline,
             "wpm": wpm_trend,
-            "fillers": filler_trend,
             "clarity": clarity_trend,
             "pauses": pauses_trend,
             "mode_distribution": modes_count
@@ -852,7 +969,6 @@ def compare_sessions():
 
     # Calculate real mathematical deltas
     wpm_diff = round(s_b.wpm - s_a.wpm, 1)
-    filler_diff = s_b.filler_count - s_a.filler_count
     pauses_diff = s_b.pauses_count - s_a.pauses_count
     clarity_diff = round(s_b.clarity_score - s_a.clarity_score, 1)
     repetitions_diff = s_b.repetitions_count - s_a.repetitions_count
@@ -861,10 +977,6 @@ def compare_sessions():
     if abs(wpm_diff) > 3:
         direction = "faster" if wpm_diff > 0 else "more relaxed/slower"
         comparative_notes.append(f"Speaking pace shifted by {abs(wpm_diff)} WPM ({direction}).")
-    if filler_diff < 0:
-        comparative_notes.append(f"Filler sounds decreased by {abs(filler_diff)} word(s).")
-    elif filler_diff > 0:
-        comparative_notes.append(f"Recorded {filler_diff} more filler word(s) in Attempt B.")
     if pauses_diff < 0:
         comparative_notes.append(f"Pauses & hesitations reduced by {abs(pauses_diff)}.")
     if clarity_diff > 0:
@@ -878,7 +990,6 @@ def compare_sessions():
         "recording_b": s_b.to_dict(),
         "deltas": {
             "wpm_diff": wpm_diff,
-            "filler_diff": filler_diff,
             "pauses_diff": pauses_diff,
             "clarity_diff": clarity_diff,
             "repetitions_diff": repetitions_diff
@@ -892,11 +1003,12 @@ def compare_sessions():
 def conversation_chat():
     user = get_current_user()
     data = request.get_json() or {}
-    scenario_id = data.get('scenario_id', 'scen_cafe')
+    scenario_id = data.get('scenario_id', 'scen_intro')
     user_message = data.get('user_message', '').strip()
     history = data.get('history', [])
     persona = data.get('persona', user.ai_persona if user else 'buddy_mascot')
     practice_age = user.practice_age if user else 21
+    language = data.get('language') or (user.preferred_language if user else 'English')
 
     if not user_message:
         return jsonify({"error": "Empty message."}), 400
@@ -911,15 +1023,19 @@ def conversation_chat():
         user_message=user_message,
         history=history,
         persona=persona,
-        user_age=practice_age
+        user_age=practice_age,
+        language=language,
+        custom_api_key=user.custom_api_key if user else None
     )
 
     return jsonify({
         "reply": result['reply'],
         "speaking_tip": result.get('speaking_tip', ''),
         "scenario_title": scenario_title,
-        "persona_used": persona
+        "persona_used": persona,
+        "language": language
     })
+
 
 
 # ----------------- BUG REPORT API -----------------

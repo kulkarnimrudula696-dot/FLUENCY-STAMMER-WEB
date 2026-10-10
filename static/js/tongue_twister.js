@@ -332,11 +332,10 @@ const TongueTwisterPractice = {
 
       showToast("Recording started! Read the tongue twister clearly aloud.", "info");
     } catch (err) {
-      console.error("Microphone error:", err);
-      const errType = err && err.name ? err.name : 'MicrophoneError';
-      const errDetails = err && err.message ? err.message : '';
-      const displayMsg = errDetails ? `${errType}: ${errDetails}` : `${errType}: Failed to access microphone.`;
-      showToast(displayMsg, "error");
+      console.error("Microphone error in Tongue Twister Mode:", err);
+      const errMsg = (err && err.message) ? err.message : "Microphone access failed. Please check browser permissions.";
+      showToast(errMsg, "error");
+      this.resetRecordingUI();
     }
   },
 
@@ -345,6 +344,12 @@ const TongueTwisterPractice = {
     const engine = this.getAudioEngine();
     if (engine) {
       engine.stopRecording();
+      if (typeof engine.getFullTranscript === 'function') {
+        const fullT = engine.getFullTranscript();
+        if (fullT) {
+          this.recordedTranscript = fullT;
+        }
+      }
     }
     this.isRecording = false;
     this.hasRecorded = true;
@@ -382,7 +387,10 @@ const TongueTwisterPractice = {
     }
 
     try {
-      const finalTranscript = (this.recordedTranscript || "").trim();
+      let finalTranscript = (this.recordedTranscript || "").trim();
+      if (!finalTranscript && this.audioEngine && typeof this.audioEngine.getFullTranscript === 'function') {
+        finalTranscript = this.audioEngine.getFullTranscript().trim();
+      }
       const promptText = this.activeItem ? this.activeItem.text : "";
       const durationSecs = this.audioEngine ? Math.max(this.audioEngine.elapsedSeconds, 2) : 3;
 

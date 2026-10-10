@@ -16,7 +16,6 @@ const ConversationPractice = {
   isUserSpeaking: false,
   isCameraActive: false,
   cameraStream: null,
-  recognition: null,
   synth: window.speechSynthesis,
   timerInterval: null,
   isInitialized: false,
@@ -32,6 +31,25 @@ const ConversationPractice = {
         this.audioEngine = new window.FluencyAudioEngine();
       }
       if (this.audioEngine) {
+        this.audioEngine.onTranscriptUpdate = (finalTranscript, interim) => {
+          const combined = (finalTranscript + (interim ? ' ' + interim : '')).trim();
+          if (combined) {
+            this.currentUserTranscript = combined;
+            const captionSpeaker = document.getElementById('convo-caption-speaker-name');
+            const captionText = document.getElementById('convo-caption-text');
+            if (captionSpeaker) {
+              const user = (window.AppState && AppState.user) ? AppState.user : null;
+              const rawName = (user && user.name) 
+                ? user.name.trim() 
+                : (localStorage.getItem('fluency_user_name') || 'You');
+              captionSpeaker.innerText = rawName.split(' ')[0] || 'You';
+            }
+            if (captionText) {
+              captionText.innerText = `"${combined}"`;
+            }
+          }
+        };
+
         this.audioEngine.onAudioReady = (dataUrl) => {
           this.recordedAudioUrl = dataUrl;
         };
@@ -40,10 +58,24 @@ const ConversationPractice = {
     return this.audioEngine;
   },
 
+  getCurrentLanguage() {
+    if (window.FluencyI18n && typeof window.FluencyI18n.getLanguage === 'function') {
+      return window.FluencyI18n.getLanguage();
+    }
+    if (window.AppState && window.AppState.user && window.AppState.user.preferred_language) {
+      return window.AppState.user.preferred_language;
+    }
+    try {
+      return localStorage.getItem('fluency_app_lang') || localStorage.getItem('fluency_language') || 'English';
+    } catch (e) {
+      return 'English';
+    }
+  },
+
   init() {
+    this.getAudioEngine();
     if (!this.isInitialized) {
       this.bindEvents();
-      this.initSpeechRec();
       this.isInitialized = true;
     }
     this.updateUserIdentity();
@@ -84,15 +116,13 @@ const ConversationPractice = {
     if (this.synth) {
       try { this.synth.cancel(); } catch (e) {}
     }
-    if (this.recognition && this.isUserSpeaking) {
-      try { this.recognition.stop(); } catch (e) {}
-      this.isUserSpeaking = false;
-    }
+    this.isUserSpeaking = false;
     if (this.audioEngine) {
       this.audioEngine.stopRecording();
     }
     if (this.cameraStream && this.isCameraActive) {
       this.cameraStream.getTracks().forEach(t => t.stop());
+      this.cameraStream = null;
       this.isCameraActive = false;
       const video = document.getElementById('convo-camera-video');
       const placeholder = document.getElementById('convo-pip-placeholder');
@@ -100,63 +130,6 @@ const ConversationPractice = {
       if (video) video.style.display = 'none';
       if (placeholder) placeholder.style.display = 'flex';
       if (camText) camText.innerText = window.FluencyI18n ? FluencyI18n.t('btn_cam_on', 'Camera On') : 'Camera On';
-    }
-  },
-
-  initSpeechRec() {
-    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRec) {
-      this.recognition = new SpeechRec();
-      this.recognition.continuous = true;
-      this.recognition.interimResults = true;
-      
-      // Sync recognition language with preferred language
-      const langMap = {
-        'English': 'en-US',
-        'Hindi': 'hi-IN',
-        'Marathi': 'mr-IN',
-        'Spanish': 'es-ES',
-        'French': 'fr-FR',
-        'German': 'de-DE'
-      };
-      const currentLang = window.FluencyI18n ? FluencyI18n.currentLang : 'English';
-      this.recognition.lang = langMap[currentLang] || 'en-US';
-
-      this.recognition.onresult = (event) => {
-        let interim = '';
-        let final = '';
-
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            final += event.results[i][0].transcript;
-          } else {
-            interim += event.results[i][0].transcript;
-          }
-        }
-
-        const spoken = (final || interim).trim();
-        if (spoken) {
-          this.currentUserTranscript = spoken;
-          const captionText = document.getElementById('convo-caption-text');
-          const captionSpeaker = document.getElementById('convo-caption-speaker-name');
-          if (captionSpeaker) {
-            captionSpeaker.innerText = AppState.user ? AppState.user.name.split(' ')[0] : 'You';
-          }
-          if (captionText) {
-            captionText.innerText = `"${spoken}"`;
-          }
-        }
-      };
-
-      this.recognition.onerror = (e) => {
-        console.warn('Convo speech recognition event:', e.error);
-      };
-
-      this.recognition.onend = () => {
-        if (this.isUserSpeaking) {
-          try { this.recognition.start(); } catch (e) {}
-        }
-      };
     }
   },
 
@@ -187,18 +160,19 @@ const ConversationPractice = {
     });
   },
 
-  async loadScenarios() {
+  async loadScenarios(force = false) {
     const ageGroup = (AppState.user && AppState.user.age_group) || '18-23';
     const age = AppState.user ? (AppState.user.practice_age || 21) : 21;
-    const cacheKey = ageGroup;
-    if (this.scenariosCache[cacheKey] && this.scenariosCache[cacheKey].length > 0) {
+    const currentLang = this.getCurrentLanguage();
+    const cacheKey = `${ageGroup}_${currentLang}`;
+    if (!force && this.scenariosCache[cacheKey] && this.scenariosCache[cacheKey].length > 0) {
       this.scenarios = this.scenariosCache[cacheKey];
       this.renderScenariosSelect();
       return;
     }
 
     try {
-      const res = await fetch(`/api/content/scenarios?age_group=${encodeURIComponent(ageGroup)}&age=${age}`);
+      const res = await fetch(`/api/content/scenarios?age_group=${encodeURIComponent(ageGroup)}&age=${age}&language=${encodeURIComponent(currentLang)}`);
       const data = await res.json();
       this.scenarios = data.items || [];
       this.scenariosCache[cacheKey] = this.scenarios;
@@ -211,8 +185,10 @@ const ConversationPractice = {
   renderScenariosSelect() {
     const select = document.getElementById('convo-scenario-select');
     if (select && this.scenarios.length > 0) {
-      select.innerHTML = this.scenarios.map(s => `<option value="${s.id}">${s.icon} ${s.title}</option>`).join('');
-      this.selectScenario(this.scenarios[0].id);
+      select.innerHTML = this.scenarios.map(s => `<option value="${s.id}">${s.icon || '💬'} ${s.title}</option>`).join('');
+      const currentSelected = this.activeScenario ? this.activeScenario.id : this.scenarios[0].id;
+      select.value = currentSelected;
+      this.selectScenario(currentSelected);
     }
   },
 
@@ -346,8 +322,11 @@ const ConversationPractice = {
   },
 
   speakText(text) {
-    if (!this.synth) return;
-    this.synth.cancel();
+    if (!this.synth) {
+      this.setCallState('user-turn');
+      return;
+    }
+    try { this.synth.cancel(); } catch (e) {}
 
     this.lastAiMessage = text;
     this.setCallState('ai-speaking');
@@ -362,26 +341,31 @@ const ConversationPractice = {
     utterance.rate = 0.94; // Friendly, calm, steady pace
     utterance.pitch = 1.05;
 
-    // Pick warm natural voice
-    const voices = this.synth.getVoices();
-    const currentLang = window.FluencyI18n ? FluencyI18n.currentLang : 'English';
-    const langPrefixMap = {
-      'English': 'en',
-      'Hindi': 'hi',
-      'Marathi': 'mr',
-      'Spanish': 'es',
-      'French': 'fr',
-      'German': 'de'
+    // Pick warm natural voice matching language
+    const currentLang = this.getCurrentLanguage();
+    const langTagMap = {
+      'English': 'en-US',
+      'Hindi': 'hi-IN',
+      'Marathi': 'mr-IN',
+      'Spanish': 'es-ES',
+      'French': 'fr-FR',
+      'German': 'de-DE',
+      'Japanese': 'ja-JP',
+      'Chinese': 'zh-CN'
     };
-    const prefix = langPrefixMap[currentLang] || 'en';
+    utterance.lang = langTagMap[currentLang] || 'en-US';
 
-    const matchVoice = voices.find(v => v.lang.startsWith(prefix) && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Premium')));
-    if (matchVoice) {
-      utterance.voice = matchVoice;
-    } else {
-      const fallbackLangVoice = voices.find(v => v.lang.startsWith(prefix));
-      if (fallbackLangVoice) utterance.voice = fallbackLangVoice;
-    }
+    try {
+      const voices = this.synth.getVoices();
+      const prefix = (langTagMap[currentLang] || 'en-US').substring(0, 2);
+      const matchVoice = voices.find(v => v.lang.startsWith(prefix) && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Premium')));
+      if (matchVoice) {
+        utterance.voice = matchVoice;
+      } else {
+        const fallbackLangVoice = voices.find(v => v.lang.startsWith(prefix));
+        if (fallbackLangVoice) utterance.voice = fallbackLangVoice;
+      }
+    } catch (ve) {}
 
     utterance.onend = () => {
       this.setCallState('user-turn');
@@ -391,7 +375,11 @@ const ConversationPractice = {
       this.setCallState('user-turn');
     };
 
-    this.synth.speak(utterance);
+    try {
+      this.synth.speak(utterance);
+    } catch (se) {
+      this.setCallState('user-turn');
+    }
   },
 
   replayVoice() {
@@ -403,32 +391,44 @@ const ConversationPractice = {
   async toggleUserSpeaking() {
     if (!this.isUserSpeaking) {
       // START USER SPEAKING
-      if (this.synth) this.synth.cancel();
+      if (this.synth) {
+        try { this.synth.cancel(); } catch (e) {}
+      }
       this.isUserSpeaking = true;
       this.currentUserTranscript = '';
 
       const captionSpeaker = document.getElementById('convo-caption-speaker-name');
       const captionText = document.getElementById('convo-caption-text');
-      if (captionSpeaker) captionSpeaker.innerText = AppState.user ? AppState.user.name.split(' ')[0] : 'You';
-      if (captionText) captionText.innerText = "Listening to you...";
+      if (captionSpeaker) {
+        const user = (window.AppState && AppState.user) ? AppState.user : null;
+        const rawName = (user && user.name) 
+          ? user.name.trim() 
+          : (localStorage.getItem('fluency_user_name') || 'You');
+        captionSpeaker.innerText = rawName.split(' ')[0] || 'You';
+      }
+      if (captionText) {
+        captionText.innerText = "Listening to you... Speak freely";
+      }
 
       this.setCallState('user-speaking');
 
-      // Start Audio Engine Recording
+      // Sync speech recognition language with active user language
       const engine = this.getAudioEngine();
+      const currentLang = this.getCurrentLanguage();
+      if (engine && typeof engine.setLanguage === 'function') {
+        engine.setLanguage(currentLang);
+      }
+
+      // Start Audio Engine Recording & Speech Recognition
       if (engine) {
         try {
           await engine.startRecording();
-        } catch (e) {
-          console.warn("AudioEngine start note:", e);
-        }
-      }
-
-      if (this.recognition) {
-        try {
-          this.recognition.start();
-        } catch (e) {
-          console.warn("SpeechRec start note:", e);
+        } catch (err) {
+          console.error("Microphone recording error in conversation mode:", err);
+          showToast("Microphone access is required for conversation mode. Please check permissions.", "warning");
+          this.isUserSpeaking = false;
+          this.setCallState('user-turn');
+          return;
         }
       }
     } else {
@@ -443,11 +443,9 @@ const ConversationPractice = {
         } catch (e) {}
       }
 
-      if (this.recognition) {
-        try { this.recognition.stop(); } catch (e) {}
-      }
+      const engineSpoken = engine ? ((engine.transcript || '') + ' ' + (engine.interimTranscript || '')).trim() : '';
+      const spoken = (this.currentUserTranscript || engineSpoken || '').trim();
 
-      const spoken = this.currentUserTranscript.trim();
       if (!spoken) {
         showToast("Didn't catch any words. Try tapping Speak again.", "info");
         this.setCallState('user-turn');
@@ -460,15 +458,18 @@ const ConversationPractice = {
 
       this.setCallState('thinking');
 
+      const currentLang = this.getCurrentLanguage();
+
       try {
         const response = await fetch('/api/conversation/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            scenario_id: this.activeScenario ? this.activeScenario.id : 'scen_cafe',
+            scenario_id: this.activeScenario ? this.activeScenario.id : 'scen_intro',
             user_message: spoken,
             history: this.conversationHistory,
-            persona: 'buddy_mascot'
+            persona: 'buddy_mascot',
+            language: currentLang
           })
         });
 
@@ -496,12 +497,17 @@ const ConversationPractice = {
     if (this.isCameraActive) {
       if (this.cameraStream) {
         this.cameraStream.getTracks().forEach(t => t.stop());
+        this.cameraStream = null;
       }
       if (video) video.style.display = 'none';
       if (placeholder) placeholder.style.display = 'flex';
       this.isCameraActive = false;
       if (camText) camText.innerText = t('btn_cam_on', 'Camera On');
     } else {
+      if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+        showToast("Camera access is not supported in this browser environment or requires HTTPS/localhost.", "warning");
+        return;
+      }
       try {
         this.cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         if (video) {
@@ -523,16 +529,25 @@ const ConversationPractice = {
       return;
     }
 
-    if (this.timerInterval) clearInterval(this.timerInterval);
-    if (this.synth) this.synth.cancel();
-    if (this.recognition) {
-      try { this.recognition.stop(); } catch (e) {}
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
+    if (this.synth) {
+      try { this.synth.cancel(); } catch (e) {}
+    }
+    this.isUserSpeaking = false;
+    if (this.audioEngine) {
+      this.audioEngine.stopRecording();
     }
     if (this.cameraStream) {
       this.cameraStream.getTracks().forEach(t => t.stop());
+      this.cameraStream = null;
+      this.isCameraActive = false;
     }
 
     const fullTranscript = this.userSpokenSegments.join(" ");
+    const currentLang = this.getCurrentLanguage();
 
     showToast("Analyzing your face-to-face conversation...", "info");
 
@@ -546,7 +561,8 @@ const ConversationPractice = {
           duration_seconds: Math.max(this.totalDurationSeconds, 15),
           transcript: fullTranscript,
           prompt_text: this.activeScenario ? this.activeScenario.context : "1-on-1 Practice",
-          audio_data_url: this.recordedAudioUrl
+          audio_data_url: this.recordedAudioUrl,
+          language: currentLang
         })
       });
 

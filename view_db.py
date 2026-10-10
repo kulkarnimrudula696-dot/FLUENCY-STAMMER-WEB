@@ -37,10 +37,10 @@ else:
 
 # 2. Show Practice Sessions
 print("\n--- 2. PRACTICE SESSIONS TABLE (`practice_sessions`) ---")
-cursor.execute("SELECT id, user_id, mode, title, duration_seconds, wpm, filler_count, clarity_score, created_at FROM practice_sessions ORDER BY id DESC LIMIT 10")
+cursor.execute("SELECT id, user_id, mode, title, duration_seconds, wpm, pauses_count, clarity_score, created_at FROM practice_sessions ORDER BY id DESC LIMIT 10")
 sessions = cursor.fetchall()
 if sessions:
-    print(f"{'ID':<4} | {'User':<5} | {'Mode':<12} | {'Title':<28} | {'Dur(s)':<6} | {'WPM':<6} | {'Fillers':<8} | {'Clarity':<8} | {'Date':<16}")
+    print(f"{'ID':<4} | {'User':<5} | {'Mode':<12} | {'Title':<28} | {'Dur(s)':<6} | {'WPM':<6} | {'Pauses':<8} | {'Clarity':<8} | {'Date':<16}")
     print("-" * 110)
     for s in sessions:
         print(f"{s[0]:<4} | {s[1]:<5} | {s[2]:<12} | {s[3][:26]:<28} | {s[4]:<6} | {s[5]:<6} | {s[6]:<8} | {s[7]:<8} | {str(s[8])[:16]:<16}")

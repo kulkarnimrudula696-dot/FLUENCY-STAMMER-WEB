@@ -324,11 +324,10 @@ const ReadingPractice = {
 
       showToast("Recording started. Read aloud at a calm, comfortable pace.", "info");
     } catch (err) {
-      console.error("Microphone error:", err);
-      const errType = err && err.name ? err.name : 'MicrophoneError';
-      const errDetails = err && err.message ? err.message : '';
-      const displayMsg = errDetails ? `${errType}: ${errDetails}` : `${errType}: Failed to access microphone.`;
-      showToast(displayMsg, "error");
+      console.error("Microphone error in Reading Mode:", err);
+      const errMsg = (err && err.message) ? err.message : "Microphone access failed. Please check browser permissions.";
+      showToast(errMsg, "error");
+      this.resetRecordingUI();
     }
   },
 
@@ -337,6 +336,12 @@ const ReadingPractice = {
     const engine = this.getAudioEngine();
     if (engine) {
       engine.stopRecording();
+      if (typeof engine.getFullTranscript === 'function') {
+        const fullT = engine.getFullTranscript();
+        if (fullT) {
+          this.recordedTranscript = fullT;
+        }
+      }
     }
     this.isRecording = false;
     this.hasRecorded = true;
@@ -370,7 +375,10 @@ const ReadingPractice = {
     }
 
     try {
-      const finalTranscript = this.recordedTranscript.trim();
+      let finalTranscript = (this.recordedTranscript || "").trim();
+      if (!finalTranscript && this.audioEngine && typeof this.audioEngine.getFullTranscript === 'function') {
+        finalTranscript = this.audioEngine.getFullTranscript().trim();
+      }
 
       const response = await fetch('/api/practice/analyze', {
         method: 'POST',
@@ -381,7 +389,8 @@ const ReadingPractice = {
           duration_seconds: Math.max(this.audioEngine.elapsedSeconds, 3),
           transcript: finalTranscript,
           prompt_text: this.activeContent ? this.activeContent.text : "",
-          audio_data_url: this.recordedAudioUrl
+          audio_data_url: this.recordedAudioUrl,
+          language: this.getCurrentLanguage()
         })
       });
 

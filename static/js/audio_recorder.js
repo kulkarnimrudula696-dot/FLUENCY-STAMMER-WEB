@@ -1,7 +1,8 @@
 /**
  * FLUENCY Audio Recorder & Real-Time Speech Recognition Engine
  * Integrates:
- * - MediaRecorder for client-side audio recording
+ * - Safe microphone acquisition with modern navigator.mediaDevices + legacy getUserMedia fallbacks
+ * - MediaRecorder for client-side audio recording and data URL encoding
  * - AudioContext + AnalyserNode for live canvas audio waveform visualization
  * - Web Speech API (SpeechRecognition) for live speech-to-text
  */
@@ -39,6 +40,92 @@ class FluencyAudioEngine {
     this.initSpeechRecognition();
   }
 
+  static isSupported() {
+    return !!(
+      (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') ||
+      navigator.getUserMedia ||
+      navigator.webkitGetUserMedia ||
+      navigator.mozGetUserMedia ||
+      navigator.msGetUserMedia
+    );
+  }
+
+  normalizeMediaError(err) {
+    if (!err) return new Error("Unknown microphone error occurred.");
+    const name = err.name || "";
+    if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+      const e = new Error("Microphone permission was denied. Please allow microphone access in your browser settings.");
+      e.name = "NotAllowedError";
+      return e;
+    }
+    if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+      const e = new Error("No microphone device was detected. Please plug in or enable a microphone.");
+      e.name = "NotFoundError";
+      return e;
+    }
+    if (name === "NotReadableError" || name === "TrackStartError") {
+      const e = new Error("Microphone is currently occupied or in use by another application.");
+      e.name = "NotReadableError";
+      return e;
+    }
+    if (name === "OverconstrainedError" || name === "ConstraintNotSatisfiedError") {
+      const e = new Error("Microphone does not satisfy the requested audio constraints.");
+      e.name = "OverconstrainedError";
+      return e;
+    }
+    if (name === "SecurityError") {
+      const e = new Error("Microphone access blocked due to security restrictions. Please use localhost or HTTPS.");
+      e.name = "SecurityError";
+      return e;
+    }
+    return err;
+  }
+
+  async requestUserAudioStream() {
+    // 1. Standard modern API: navigator.mediaDevices.getUserMedia
+    if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
+      try {
+        return await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (err) {
+        throw this.normalizeMediaError(err);
+      }
+    }
+
+    // 2. Legacy getUserMedia fallbacks
+    const legacyGUM = navigator.getUserMedia ||
+      navigator.webkitGetUserMedia ||
+      navigator.mozGetUserMedia ||
+      navigator.msGetUserMedia;
+
+    if (legacyGUM) {
+      return new Promise((resolve, reject) => {
+        legacyGUM.call(
+          navigator,
+          { audio: true },
+          (stream) => resolve(stream),
+          (err) => reject(this.normalizeMediaError(err))
+        );
+      });
+    }
+
+    // 3. Informative error if running in an insecure non-localhost context
+    const isLocal = location.hostname === 'localhost' ||
+      location.hostname === '127.0.0.1' ||
+      location.hostname === '[::1]' ||
+      location.protocol === 'https:';
+
+    if (!isLocal && !window.isSecureContext) {
+      const err = new Error("Microphone access requires a secure connection (HTTPS) or local server (http://localhost:5000 / http://127.0.0.1:5000). Please open the application via localhost or HTTPS.");
+      err.name = "SecurityError";
+      throw err;
+    }
+
+    // 4. Fallback for completely unsupported browser environment
+    const err = new Error("Microphone recording (getUserMedia) is not available in this browser. Please use Chrome, Edge, Firefox, or Safari.");
+    err.name = "NotSupportedError";
+    throw err;
+  }
+
   getRecognitionLanguage() {
     let lang = this.currentLanguage;
     if (!lang && window.FluencyI18n && typeof window.FluencyI18n.getLanguage === 'function') {
@@ -74,6 +161,15 @@ class FluencyAudioEngine {
     }
   }
 
+  getFullTranscript() {
+    const finalPart = (this.transcript || "").trim();
+    const interimPart = (this.interimTranscript || "").trim();
+    if (finalPart && interimPart) {
+      return `${finalPart} ${interimPart}`;
+    }
+    return finalPart || interimPart || "";
+  }
+
   initSpeechRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
@@ -99,8 +195,9 @@ class FluencyAudioEngine {
         }
         this.interimTranscript = interim;
 
+        const full = this.getFullTranscript();
         if (this.onTranscriptUpdate) {
-          this.onTranscriptUpdate(this.transcript.trim(), interim.trim());
+          this.onTranscriptUpdate(full, interim.trim(), this.transcript.trim());
         }
       };
 
@@ -137,80 +234,92 @@ class FluencyAudioEngine {
       });
       console.log("Reusing existing granted microphone stream:", this.stream);
     } else {
-      console.log("Start Recording clicked");
-      console.log("mediaDevices:", navigator.mediaDevices);
-      console.log("isSecureContext:", window.isSecureContext);
-      console.log("Requesting microphone...");
-
+      console.log("Requesting microphone stream...");
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await this.requestUserAudioStream();
         this.stream = stream;
-        console.log("Microphone stream received:", stream);
+        console.log("Microphone stream received successfully:", stream);
       } catch (error) {
-        console.error("Microphone error:", error);
+        console.error("Microphone initialization error:", error);
         throw error;
       }
     }
 
-    // Set up MediaRecorder
-    try {
-      let options = {};
-      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-        options = { mimeType: 'audio/webm;codecs=opus' };
-      } else if (MediaRecorder.isTypeSupported('audio/webm')) {
-        options = { mimeType: 'audio/webm' };
-      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-        options = { mimeType: 'audio/mp4' };
-      }
-      this.mediaRecorder = new MediaRecorder(this.stream, options);
-    } catch (mrErr) {
-      this.mediaRecorder = new MediaRecorder(this.stream);
-    }
-
-    this.mediaRecorder.ondataavailable = (e) => {
-      if (e.data && e.data.size > 0) {
-        this.audioChunks.push(e.data);
-      }
-    };
-
-    this.mediaRecorder.onstop = async () => {
-      const mimeType = (this.mediaRecorder && this.mediaRecorder.mimeType) || 'audio/webm';
-      this.audioBlob = new Blob(this.audioChunks, { type: mimeType });
-      // Convert to Base64 data URL for persistence and playback
-      const reader = new FileReader();
-      reader.readAsDataURL(this.audioBlob);
-      reader.onloadend = () => {
-        this.audioDataUrl = reader.result;
-        if (this.onAudioReady) {
-          this.onAudioReady(this.audioDataUrl, this.audioBlob);
+    // Set up MediaRecorder if stream exists
+    if (this.stream && typeof MediaRecorder !== 'undefined') {
+      try {
+        let options = {};
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          options = { mimeType: 'audio/webm;codecs=opus' };
+        } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+          options = { mimeType: 'audio/webm' };
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          options = { mimeType: 'audio/mp4' };
         }
-      };
-    };
+        this.mediaRecorder = new MediaRecorder(this.stream, options);
+      } catch (mrErr) {
+        try {
+          this.mediaRecorder = new MediaRecorder(this.stream);
+        } catch (e) {
+          console.warn("MediaRecorder fallback note:", e);
+        }
+      }
 
-    this.mediaRecorder.start(250); // Slice chunks every 250ms
+      if (this.mediaRecorder) {
+        this.mediaRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) {
+            this.audioChunks.push(e.data);
+          }
+        };
+
+        this.mediaRecorder.onstop = async () => {
+          const mimeType = (this.mediaRecorder && this.mediaRecorder.mimeType) || 'audio/webm';
+          this.audioBlob = new Blob(this.audioChunks, { type: mimeType });
+          // Convert to Base64 data URL for persistence and playback
+          const reader = new FileReader();
+          reader.readAsDataURL(this.audioBlob);
+          reader.onloadend = () => {
+            this.audioDataUrl = reader.result;
+            if (this.onAudioReady) {
+              this.onAudioReady(this.audioDataUrl, this.audioBlob);
+            }
+          };
+        };
+
+        try {
+          this.mediaRecorder.start(250); // Slice chunks every 250ms
+        } catch (mStartErr) {
+          console.warn("MediaRecorder start note:", mStartErr);
+        }
+      }
+    }
 
     // Start Speech Recognition (non-blocking)
     if (this.recognition) {
+      try {
+        this.recognition.abort();
+      } catch (e) {}
       try {
         this.recognition.lang = this.getRecognitionLanguage();
         this.isRecognizing = true;
         this.recognition.start();
       } catch (e) {
-        console.warn("Speech recognition status:", e);
+        console.warn("Speech recognition start note:", e);
       }
     }
 
     // Start Real-Time Waveform Visualizer (non-blocking)
-    if (canvasElement) {
+    if (canvasElement && this.stream) {
       try {
         this.startWaveformVisualizer(canvasElement);
       } catch (vizErr) {
-        console.warn("Waveform visualizer status:", vizErr);
+        console.warn("Waveform visualizer note:", vizErr);
       }
     }
 
     // Start Timer
     this.startTime = Date.now();
+    if (this.timerInterval) clearInterval(this.timerInterval);
     this.timerInterval = setInterval(() => {
       this.elapsedSeconds = Math.floor((Date.now() - this.startTime) / 1000);
       if (this.onTimerTick) {
@@ -221,7 +330,9 @@ class FluencyAudioEngine {
 
   stopRecording() {
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
-      this.mediaRecorder.stop();
+      try {
+        this.mediaRecorder.stop();
+      } catch (e) {}
     }
 
     // Keep stream active for instant reuse on subsequent recordings without prompting again
@@ -238,12 +349,24 @@ class FluencyAudioEngine {
       } catch (e) {}
     }
 
+    // Commit any in-flight interim transcript so words spoken right before stopping are preserved
+    if (this.interimTranscript && this.interimTranscript.trim()) {
+      const interim = this.interimTranscript.trim();
+      const current = (this.transcript || "").trim();
+      if (!current.endsWith(interim)) {
+        this.transcript = (current ? current + ' ' + interim : interim).trim();
+      }
+      this.interimTranscript = '';
+    }
+
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
+      this.timerInterval = null;
     }
 
     if (this.animFrameId) {
       cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
     }
 
     if (this.audioCtx && this.audioCtx.state !== 'closed') {
@@ -261,56 +384,68 @@ class FluencyAudioEngine {
   }
 
   startWaveformVisualizer(canvas) {
+    if (!canvas || !this.stream) return;
+
     if (this.animFrameId) {
       cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
     }
     if (this.audioCtx && this.audioCtx.state !== 'closed') {
       try { this.audioCtx.close(); } catch (e) {}
     }
 
-    const ctx = canvas.getContext('2d');
-    this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (this.audioCtx.state === 'suspended') {
-      this.audioCtx.resume();
-    }
-    this.analyser = this.audioCtx.createAnalyser();
-    this.analyser.fftSize = 256;
+    try {
+      const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtxClass) return;
 
-    const source = this.audioCtx.createMediaStreamSource(this.stream);
-    source.connect(this.analyser);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
 
-    const bufferLength = this.analyser.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-
-    const draw = () => {
-      this.animFrameId = requestAnimationFrame(draw);
-      this.analyser.getByteFrequencyData(dataArray);
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#FAF4EB';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      const barWidth = (canvas.width / bufferLength) * 2.2;
-      let x = 0;
-
-      for (let i = 0; i < bufferLength; i++) {
-        const barHeight = (dataArray[i] / 255) * (canvas.height - 10);
-
-        // Warm otter gradient for bars
-        const grad = ctx.createLinearGradient(0, canvas.height, 0, 0);
-        grad.addColorStop(0, '#9A633F');
-        grad.addColorStop(1, '#FFC83D');
-
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.roundRect(x, canvas.height - barHeight, barWidth - 2, barHeight, [4, 4, 0, 0]);
-        ctx.fill();
-
-        x += barWidth;
+      this.audioCtx = new AudioCtxClass();
+      if (this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume();
       }
-    };
+      this.analyser = this.audioCtx.createAnalyser();
+      this.analyser.fftSize = 256;
 
-    draw();
+      const source = this.audioCtx.createMediaStreamSource(this.stream);
+      source.connect(this.analyser);
+
+      const bufferLength = this.analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      const draw = () => {
+        this.animFrameId = requestAnimationFrame(draw);
+        this.analyser.getByteFrequencyData(dataArray);
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#FAF4EB';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const barWidth = (canvas.width / bufferLength) * 2.2;
+        let x = 0;
+
+        for (let i = 0; i < bufferLength; i++) {
+          const barHeight = (dataArray[i] / 255) * (canvas.height - 10);
+
+          // Warm otter gradient for bars
+          const grad = ctx.createLinearGradient(0, canvas.height, 0, 0);
+          grad.addColorStop(0, '#9A633F');
+          grad.addColorStop(1, '#FFC83D');
+
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.roundRect(x, canvas.height - barHeight, barWidth - 2, barHeight, [4, 4, 0, 0]);
+          ctx.fill();
+
+          x += barWidth;
+        }
+      };
+
+      draw();
+    } catch (vizErr) {
+      console.warn("Waveform visualizer note:", vizErr);
+    }
   }
 
   formatTime(seconds) {
@@ -320,11 +455,12 @@ class FluencyAudioEngine {
   }
 
   getRecordingStats() {
-    const words = (this.transcript.trim().match(/\S+/g) || []).length;
+    const full = this.getFullTranscript();
+    const words = (full.match(/\S+/g) || []).length;
     return {
       duration_seconds: Math.max(1, this.elapsedSeconds),
       words_spoken: words,
-      transcript: this.transcript.trim()
+      transcript: full
     };
   }
 }

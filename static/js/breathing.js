@@ -257,6 +257,10 @@ const BreathingPractice = {
       this.isCameraOn = false;
       btn.innerHTML = `<i class="fa-solid fa-video"></i> Camera On`;
     } else {
+      if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+        showToast("Camera access is not supported in this browser environment or requires HTTPS/localhost.", "warning");
+        return;
+      }
       try {
         this.cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         video.srcObject = this.cameraStream;
